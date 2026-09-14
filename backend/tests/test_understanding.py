@@ -1,11 +1,25 @@
 import unittest
 
+from app.services.gemini_client import is_live_model
 from app.services.understanding_service import (
     _detect_sector,
     UnderstandingService,
 )
 
 fallback_understand = UnderstandingService().fallback_understand
+
+
+class TestModelRouting(unittest.TestCase):
+    def test_live_model_matches(self):
+        self.assertTrue(is_live_model("gemini-2.5-flash-preview-native-audio-dialog"))
+        self.assertTrue(is_live_model("gemini-3.1-flash-live-preview"))
+        self.assertTrue(is_live_model("gemini-2.5-flash-native-audio-preview-12-2025"))
+
+    def test_non_live_model_does_not_match(self):
+        self.assertFalse(is_live_model("gemini-3.6-flash"))
+        self.assertFalse(is_live_model("antigravity-preview-09-2026"))
+        self.assertFalse(is_live_model(""))
+        self.assertFalse(is_live_model(None))
 
 
 class TestSectorDetection(unittest.TestCase):
