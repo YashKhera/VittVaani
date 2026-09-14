@@ -20,6 +20,11 @@ class EntrepreneurProfile(Base):
     gender = Column(String(20))
     social_category = Column(String(20))
 
+    # ---- Concessional lending / SC scheme inputs ----
+    annual_family_income = Column(String(30), nullable=True)   # band: under_2.5l | 2.5l_5l | above_5l
+    education_status = Column(String(30), nullable=True)       # for educational loans
+    estimated_project_cost = Column(Integer, nullable=True)    # planned project cost (INR)
+
     business_name = Column(String(255))
     business_sector = Column(String(50))
     business_stage = Column(String(50))

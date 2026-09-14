@@ -13,6 +13,9 @@ def make_profile(**kwargs):
         gender="female",
         social_category="obc",
         description=None,
+        annual_family_income=None,
+        education_status=None,
+        estimated_project_cost=None,
     )
     defaults.update(kwargs)
     return SimpleNamespace(**defaults, requirements=[])
@@ -33,6 +36,20 @@ def make_scheme(**kwargs):
         loan_min=100000,
         loan_max=10000000,
         processing_days=15,
+        loan_category=None,
+        channel_financed=False,
+        interest_rate_min=None,
+        interest_rate_max=None,
+        moratorium_min_months=None,
+        moratorium_max_months=None,
+        max_coverage_pct=None,
+        max_project_cost=None,
+        tenure_min_months=None,
+        tenure_max_months=None,
+        income_ceiling=None,
+        annual_family_income=None,
+        education_status=None,
+        estimated_project_cost=None,
     )
     defaults.update(kwargs)
     return SimpleNamespace(**defaults)

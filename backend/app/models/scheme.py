@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, Column, DateTime, Integer, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -29,6 +29,19 @@ class Scheme(Base):
     loan_min = Column(Integer)
     loan_max = Column(Integer)
     processing_days = Column(Integer)
+
+    # ---- Channel Finance / concessional lending parameters ----
+    loan_category = Column(String(30), nullable=True)          # micro_finance | term_loan | education
+    channel_financed = Column(Boolean, default=False)          # routed via Channel Finance System
+    interest_rate_min = Column(Float, nullable=True)           # % p.a. (concessional floor)
+    interest_rate_max = Column(Float, nullable=True)           # % p.a. ceiling
+    moratorium_min_months = Column(Integer, nullable=True)
+    moratorium_max_months = Column(Integer, nullable=True)
+    max_coverage_pct = Column(Integer, nullable=True)          # % of project cost fundable (<= 90)
+    max_project_cost = Column(Integer, nullable=True)          # max project cost this scheme covers (INR)
+    tenure_min_months = Column(Integer, nullable=True)
+    tenure_max_months = Column(Integer, nullable=True)
+    income_ceiling = Column(Integer, nullable=True)            # max annual family income (INR)
 
     official_url = Column(String(500))
     application_url = Column(String(500))

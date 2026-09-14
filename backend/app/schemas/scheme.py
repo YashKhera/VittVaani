@@ -18,6 +18,17 @@ class SchemeListItem(BaseModel):
     loan_min: int | None = None
     loan_max: int | None = None
     processing_days: int | None = None
+    loan_category: str | None = None
+    channel_financed: bool = False
+    interest_rate_min: float | None = None
+    interest_rate_max: float | None = None
+    moratorium_min_months: int | None = None
+    moratorium_max_months: int | None = None
+    max_coverage_pct: int | None = None
+    max_project_cost: int | None = None
+    tenure_min_months: int | None = None
+    tenure_max_months: int | None = None
+    income_ceiling: int | None = None
     official_url: str | None = None
     application_url: str | None = None
 

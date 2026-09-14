@@ -280,6 +280,110 @@ class TestUnderstanding(ApiTestCase):
         self.assertTrue(moved, "confirming a food sector should lift at least one food scheme")
 
 
+class TestChannelFinance(ApiTestCase):
+    def _sc_payload(self, **overrides):
+        payload = {
+            "full_name": "Ravi Kumar",
+            "phone_number": "9876500001",
+            "state": "maharashtra",
+            "district": "Nagpur",
+            "age_group": "26-35",
+            "gender": "male",
+            "social_category": "sc",
+            "annual_family_income": "under_2.5l",
+            "education_status": "not_applicable",
+            "estimated_project_cost": 100000,
+            "business_name": "Ravi Enterprises",
+            "business_sector": "manufacturing",
+            "business_stage": "existing",
+            "annual_revenue": "under_10l",
+            "employee_count": "1-5",
+            "support_needs": ["loan"],
+        }
+        payload.update(overrides)
+        return payload
+
+    def _sc_setup(self, token_override=None, **overrides):
+        token = token_override or self._token()
+        r = self.client.post("/api/profile", json=self._sc_payload(**overrides), headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        return token
+
+    def _scheme_ids(self, recs):
+        return {x["scheme_id"] for x in recs}
+
+    def test_profile_accepts_channel_finance_fields(self):
+        token = self._sc_setup()
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["annual_family_income"], "under_2.5l")
+        self.assertEqual(prof["education_status"], "not_applicable")
+        self.assertEqual(prof["estimated_project_cost"], 100000)
+        self.assertEqual(prof["social_category"], "sc")
+
+    def test_profile_update_channel_finance_fields(self):
+        token = self._sc_setup()
+        r = self.client.put("/api/profile", json={
+            "annual_family_income": "2.5l_5l",
+            "education_status": "undergraduate",
+            "estimated_project_cost": 250000,
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["annual_family_income"], "2.5l_5l")
+        self.assertEqual(r.json()["education_status"], "undergraduate")
+        self.assertEqual(r.json()["estimated_project_cost"], 250000)
+
+    def test_scheme_list_exposes_channel_finance_fields(self):
+        token = self._token()
+        data = self.client.get("/api/schemes?limit=200", headers=self._headers(token)).json()
+        cp = [s for s in data["schemes"] if s.get("loan_category")]
+        self.assertTrue(cp, "catalog must expose concessional schemes")
+        for s in cp:
+            self.assertIn(s["loan_category"], ["micro_finance", "term_loan", "education"])
+            self.assertTrue(s["channel_financed"])
+            self.assertEqual(s["income_ceiling"], 500000)
+            self.assertIsNotNone(s["interest_rate_min"])
+            self.assertIsNotNone(s["max_coverage_pct"])
+
+    def test_sc_user_sees_concessional_schemes(self):
+        token = self._sc_setup(social_category="sc", annual_family_income="under_2.5l", estimated_project_cost=100000)
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        concessional = [x for x in recs if x["scheme"].get("loan_category")]
+        self.assertTrue(concessional, "SC user should see concessional loan schemes")
+
+    def test_general_user_excluded_from_concessional(self):
+        token = self._sc_setup(social_category="general", annual_family_income="under_2.5l", estimated_project_cost=100000)
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        concessional = [x for x in recs if x["scheme"].get("loan_category")]
+        self.assertFalse(concessional, "non-SC user must not get SC concessional schemes")
+
+    def test_income_above_ceiling_excluded(self):
+        token = self._sc_setup(social_category="sc", annual_family_income="above_5l", estimated_project_cost=100000)
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        concessional = [x for x in recs if x["scheme"].get("loan_category")]
+        self.assertFalse(concessional, "income above ₹5L must exclude concessional schemes")
+
+    def test_project_cost_tiering_excludes_micro_for_larger_cost(self):
+        token = self._sc_setup(social_category="sc", annual_family_income="under_2.5l", estimated_project_cost=300000)
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        cats = {x["scheme"].get("loan_category") for x in recs}
+        self.assertIn("term_loan", cats)
+        self.assertNotIn("micro_finance", cats)
+
+    def test_education_loan_requires_education(self):
+        token = self._sc_setup(social_category="sc", annual_family_income="under_2.5l", estimated_project_cost=100000,
+                                education_status="not_applicable")
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        cats = {x["scheme"].get("loan_category") for x in recs}
+        self.assertNotIn("education", cats)
+
+    def test_education_loan_granted_to_student(self):
+        token = self._sc_setup(social_category="sc", annual_family_income="under_2.5l", estimated_project_cost=200000,
+                                education_status="undergraduate", business_sector="education")
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        cats = {x["scheme"].get("loan_category") for x in recs}
+        self.assertIn("education", cats)
+
+
 class TestSchemes(ApiTestCase):
     def test_list_schemes(self):
         token = self._token()

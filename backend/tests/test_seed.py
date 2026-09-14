@@ -1,6 +1,6 @@
 import unittest
 
-from data.schemes_seed import build_schemes, SCHEMES
+from data.schemes_seed import build_schemes, CONCESSIONAL_SCHEMES, SCHEMES
 from app.utils.constants import SECTORS, SUPPORT_TYPES
 
 
@@ -39,7 +39,7 @@ class TestSeedCatalog(unittest.TestCase):
 
     def test_build_schemes_maps_fields(self):
         built = build_schemes()
-        self.assertEqual(len(built), len(SCHEMES))
+        self.assertEqual(len(built), len(SCHEMES) + len(CONCESSIONAL_SCHEMES))
         first = built[0]
         for key in ["name", "government_level", "department", "sectors", "states",
                     "business_stages", "support_types", "entrepreneur_types",
@@ -49,6 +49,19 @@ class TestSeedCatalog(unittest.TestCase):
         self.assertIsInstance(first["benefits"], list)
         self.assertIsInstance(first["documents"], list)
         self.assertIn("Aadhaar Card", first["documents"])
+
+    def test_concessional_schemes_channel_finance_fields(self):
+        for data in CONCESSIONAL_SCHEMES:
+            self.assertIn(data["loan_category"], ["micro_finance", "term_loan", "education"])
+            self.assertTrue(data["channel_financed"])
+            self.assertEqual(data["income_ceiling"], 500000)
+            self.assertLessEqual(data["max_coverage_pct"], 90)
+            self.assertGreaterEqual(data["interest_rate_min"], 6.0)
+            self.assertLessEqual(data["interest_rate_max"], 15.0)
+            self.assertIn("sc", data["entrepreneur_types"])
+            self.assertIn("Channel", " ".join(data["eligibility"]))
+            for sector in data["sectors"]:
+                self.assertIn(sector, SECTORS + ["all"])
 
 
 if __name__ == "__main__":

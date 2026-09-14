@@ -4,8 +4,10 @@ from sqlalchemy.orm import Session
 
 from app.models.profile import EntrepreneurProfile
 from app.models.scheme import Scheme
-from app.utils.constants import MATCH_WEIGHTS
+from app.utils.constants import FAMILY_INCOME_BANDS, LOAN_CATEGORY_COST_CEILING, MATCH_WEIGHTS
 from app.utils.helpers import normalize_list
+
+EDUCATION_PURSUING = {"school", "diploma", "undergraduate", "postgraduate", "research"}
 
 STOPWORDS = {
     "a", "an", "the", "and", "or", "but", "if", "of", "in", "on", "at", "to", "for",
@@ -148,8 +150,47 @@ class AdvancedMatchingService:
             "stage_match": "business stage",
             "entrepreneur_type_match": "entrepreneur category",
             "description_match": "business description",
+            "targeted_match": "targeted concessional scheme",
         }
         return [labels[k] for k, v in breakdown.items() if v and k in labels]
+
+    # ---- Channel-finance hard eligibility rules ----
+    def _family_income_value(self, profile: EntrepreneurProfile) -> Optional[int]:
+        band = (profile.annual_family_income or "").strip()
+        return FAMILY_INCOME_BANDS.get(band)
+
+    def hard_eligibility(self, profile: EntrepreneurProfile, scheme: Scheme) -> tuple[bool, Optional[str]]:
+        """Return (eligible, reason). Reason is non-empty only when ineligible."""
+        sc_scheme = bool(scheme.loan_category) and "sc" in self._types(scheme)
+        if sc_scheme and (profile.social_category or "").lower() != "sc":
+            return False, "This concessional scheme is reserved for Scheduled Caste (SC) applicants"
+
+        ceiling = scheme.income_ceiling
+        income_value = self._family_income_value(profile)
+        if ceiling and income_value is not None and income_value > ceiling:
+            return False, f"Annual family income exceeds the ₹{ceiling / 100000:.1f}L ceiling for this scheme"
+
+        cost = profile.estimated_project_cost
+        if cost:
+            cat_ceiling = LOAN_CATEGORY_COST_CEILING.get(scheme.loan_category) if scheme.loan_category else None
+            if cat_ceiling and cost > cat_ceiling:
+                return False, "Project cost exceeds this scheme's lending limit"
+            if scheme.max_project_cost and cost > scheme.max_project_cost:
+                return False, "Project cost exceeds this scheme's funded-project limit"
+
+        if scheme.loan_category == "education":
+            edu = (profile.education_status or "").lower()
+            sector = (profile.business_sector or "").lower()
+            if edu not in EDUCATION_PURSUING and sector != "education":
+                return False, "This is an education loan for students pursuing higher education or studies"
+        return True, None
+
+    def match_targeted(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
+        if not scheme.loan_category:
+            return 0
+        if (profile.social_category or "").lower() == "sc":
+            return 8
+        return 0
 
     def identify_gap(self, profile: EntrepreneurProfile, scheme: Scheme) -> Optional[str]:
         needs_collateral = any(
@@ -178,6 +219,7 @@ class AdvancedMatchingService:
             "stage_match": self.match_stage(profile, scheme),
             "entrepreneur_type_match": self.match_entrepreneur_type(profile, scheme),
             "description_match": self.match_description(profile, scheme),
+            "targeted_match": self.match_targeted(profile, scheme),
         }
         total = sum(breakdown.values())
         if total >= 90:
@@ -199,6 +241,9 @@ class AdvancedMatchingService:
     def rank_recommendations(self, profile: EntrepreneurProfile, schemes: List[Scheme]) -> List[dict]:
         recommendations = []
         for scheme in schemes:
+            eligible, block_reason = self.hard_eligibility(profile, scheme)
+            if not eligible:
+                continue
             match_info = self.calculate_match(profile, scheme)
             if match_info["score"] < 40:
                 continue

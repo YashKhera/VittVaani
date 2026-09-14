@@ -9,6 +9,13 @@ discover the **government schemes they are actually eligible for** — not just 
 generic list. Tell us about your business once, and get ranked,
 eligibility-scored recommendations with clear reasons, in your own language.
 
+Focused on the **Scheduled Caste (SC) concessional lending** mission for 2026-27:
+the recommender now covers the SC **concessional loan catalog** disbursed through
+the **Channel Finance System** — Micro Finance (up to ₹1.4L), Term Loan (up to
+₹50L) and Education Loan — with hard eligibility rules (annual family income
+≤ ₹5L, coverage ≤ 90%, cost-based tiering, moratorium 3-12 months at concessional
+rates 6.5-8%).
+
 ---
 
 ## ✨ Highlights
@@ -19,6 +26,8 @@ eligibility-scored recommendations with clear reasons, in your own language.
   with **no API key**.
 - **Eligibility matching engine** — hard eligibility-rule filter followed by
   weighted relevance scoring → ranked results with a score breakdown per scheme.
+  Concessional SC schemes are auto-excluded for applicants above the income
+  ceiling, outside the category, or with project costs above the loan ceiling.
 - **Explanations that matter** — top matches get a short plain-language AI
   "why it fits you" summary (generated concurrently to keep latency low).
 - **Adaptive questionnaire** — a short branching flow (9 questions) that skips
@@ -52,7 +61,7 @@ Arth Setu/
 │   │   ├── schemas/          # Pydantic request/response models
 │   │   ├── config.py         # settings (reads backend/.env)
 │   │   └── main.py           # FastAPI app + CORS
-│   ├── data/schemes_seed.py  # curated scheme catalog (central + state)
+│   ├── data/schemes_seed.py  # curated scheme catalog (central + state + SC concessional)
 │   ├── tests/                # pytest suite
 │   ├── requirements.txt
 │   └── run.py                # dev server → http://127.0.0.1:8001

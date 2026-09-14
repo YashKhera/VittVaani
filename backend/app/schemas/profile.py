@@ -11,6 +11,9 @@ class ProfileCreateRequest(BaseModel):
     age_group: str = ""
     gender: str = "other"
     social_category: str = "general"
+    annual_family_income: str = ""
+    education_status: str = "not_applicable"
+    estimated_project_cost: int | None = None
     business_name: str = ""
     business_sector: str
     business_stage: str = "existing"
@@ -28,6 +31,9 @@ class ProfileUpdateRequest(BaseModel):
     age_group: str | None = None
     gender: str | None = None
     social_category: str | None = None
+    annual_family_income: str | None = None
+    education_status: str | None = None
+    estimated_project_cost: int | None = None
     business_name: str | None = None
     business_sector: str | None = None
     business_stage: str | None = None
@@ -52,6 +58,9 @@ class ProfileResponse(BaseModel):
     age_group: str
     gender: str
     social_category: str
+    annual_family_income: str = ""
+    education_status: str = "not_applicable"
+    estimated_project_cost: int | None = None
     business_name: str
     business_sector: str
     business_stage: str
