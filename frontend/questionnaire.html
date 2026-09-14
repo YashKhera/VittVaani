@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Questionnaire - Arth Setu</title>
+  <script>
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('vittvaani:theme'));
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/typography.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/accessibility.css">
+  <link rel="stylesheet" href="css/print.css">
+  <style>
+    .questionnaire-page {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .questionnaire-intro { text-align: center; margin-bottom: var(--space-5); }
+  </style>
+</head>
+<body data-page="questionnaire">
+  <a href="#questionMount" class="skip-link">Skip to questionnaire</a>
+  <header id="navbar" class="navbar"></header>
+
+  <main class="container questionnaire-page">
+    <div class="questionnaire-intro">
+      <h1 class="mb-2" data-i18n="questionnaire.title">Answer a few questions</h1>
+      <p class="text-muted" data-i18n="questionnaire.saved">Your answers are saved. You can continue later.</p>
+    </div>
+    <div id="questionnaireProgress" class="questionnaire-header">
+      <div class="ring-container" id="progressRing"></div>
+      <div class="questionnaire-header-side">
+        <span class="badge badge-primary" id="stepLabel"></span>
+        <span class="marked-counter" id="markedCounter"></span>
+      </div>
+    </div>
+    <div id="questionMount"></div>
+  </main>
+
+  <div id="siteFooter"></div>
+
+  <script src="js/services/storage.js"></script>
+  <script src="js/services/theme.js"></script>
+  <script src="js/i18n/translations.js"></script>
+  <script src="js/services/i18n.js"></script>
+  <script src="js/services/notifications.js"></script>
+  <script src="js/services/validation.js"></script>
+  <script src="js/data/questions.js"></script>
+  <script src="js/data/schemes.js"></script>
+  <script src="js/services/matching.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/components/navbar.js"></script>
+  <script src="js/components/footer.js"></script>
+  <script src="js/components/progress-ring.js"></script>
+  <script src="js/components/scheme-card.js"></script>
+  <script src="js/components/match-badge.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/pages/questionnaire.js"></script>
+</body>
+</html>

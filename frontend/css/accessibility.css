@@ -1,0 +1,50 @@
+:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  white-space: nowrap;
+}
+
+.focus-ring:focus-visible { outline: 3px solid var(--primary-color); outline-offset: 2px; }
+
+.color-contrast-aa { color: var(--text-primary); }
+
+body.high-contrast {
+  --border: #000000;
+  --text-secondary: #333333;
+}
+
+body.high-contrast .btn-primary,
+body.high-contrast .step-number { background: var(--primary-dark); }
+
+.skip-link {
+  position: absolute;
+  left: var(--space-4);
+  top: -100px;
+  background: var(--primary-gradient);
+  color: #fff;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  z-index: 100;
+  transition: top var(--transition-fast);
+}
+.skip-link:focus { top: var(--space-3); text-decoration: none; }

@@ -1,0 +1,36 @@
+# ---- Secrets & local config ----
+backend/.env
+*.env
+!.env.example
+
+# ---- Databases ----
+*.db
+*.sqlite
+*.sqlite3
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# ---- Internal planning docs (not for public release) ----
+/OPENCODE_*.md
+OPENCODE_*.md
+
+# ---- OS / editor cruft ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ---- Logs / misc ----
+*.log
+.DS_Store

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Arth Setu - Find Government Schemes for Your Business</title>
+  <meta name="description" content="Arth Setu matches India's government schemes to your business profile. Answer a few simple questions and discover tailored support for marginalized entrepreneurs.">
+  <script>
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('vittvaani:theme'));
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/typography.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/accessibility.css">
+  <link rel="stylesheet" href="css/print.css">
+  <style>
+    .hero {
+      display: block;
+      text-align: center;
+      padding: var(--space-7) 0 var(--space-5);
+      max-width: 820px;
+      margin: 0 auto;
+      animation: fadeInUp var(--transition-slow) both;
+    }
+    .hero .badge {
+      margin-bottom: var(--space-4);
+    }
+    .hero-title {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      margin-bottom: var(--space-4);
+    }
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin: 0 auto var(--space-5);
+      max-width: 640px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: var(--space-3);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .feature-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      text-align: center;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body data-page="landing">
+  <a href="#main" class="skip-link">Skip to content</a>
+  <header id="navbar" class="navbar"></header>
+
+  <section class="hero" aria-labelledby="heroHeading">
+    <span class="badge badge-primary" data-i18n="landing.hero.badge">100% free &amp; confidential</span>
+    <h1 id="heroHeading" class="hero-title">
+      <span data-i18n="landing.hero.h1" data-i18n-accent-class="gradient-text">Find the right government schemes for your business</span>
+    </h1>
+    <p class="hero-subtitle" data-i18n="landing.hero.sub">VittVaani matches India's government schemes to your unique profile.</p>
+    <div class="hero-actions">
+      <a href="questionnaire.html" class="btn btn-primary btn-lg" data-i18n="landing.hero.cta">Start Matching</a>
+      <a href="#how" class="btn btn-secondary btn-lg" data-i18n="landing.hero.cta2">How it works</a>
+    </div>
+  </section>
+
+  <main id="main">
+    <section class="section" id="how" aria-labelledby="howHeading">
+      <div class="section-heading">
+        <h2 id="howHeading" data-i18n="landing.how.title">How it works</h2>
+      </div>
+      <div class="steps-grid">
+        <div class="card step-card">
+          <div class="step-number">1</div>
+          <h3 data-i18n="landing.how.1.title">Tell us about yourself</h3>
+          <p class="mb-0" data-i18n="landing.how.1.text">Answer 9 simple questions about your business, location and background.</p>
+        </div>
+        <div class="card step-card">
+          <div class="step-number">2</div>
+          <h3 data-i18n="landing.how.2.title">We match you</h3>
+          <p class="mb-0" data-i18n="landing.how.2.text">Our engine scores 65+ schemes across 14 sectors using your answers.</p>
+        </div>
+        <div class="card step-card">
+          <div class="step-number">3</div>
+          <h3 data-i18n="landing.how.3.title">Get explanations</h3>
+          <p class="mb-0" data-i18n="landing.how.3.text">Clear Hindi + English reasons why each scheme fits — no jargon.</p>
+        </div>
+        <div class="card step-card">
+          <div class="step-number">4</div>
+          <h3 data-i18n="landing.how.4.title">Apply with confidence</h3>
+          <p class="mb-0" data-i18n="landing.how.4.text">Get documents, deadlines and a week-by-week application roadmap.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="statsHeading">
+      <div class="section-heading">
+        <h2 id="statsHeading" data-i18n="landing.stats.title">Trusted by aspiring entrepreneurs</h2>
+      </div>
+      <div class="stats-grid" data-stat-grid></div>
+    </section>
+
+    <section class="section" aria-labelledby="featuresHeading">
+      <div class="section-heading">
+        <h2 id="featuresHeading" data-i18n="landing.features.title">Built for real entrepreneurs</h2>
+      </div>
+      <div class="grid grid-auto">
+        <div class="feature-card">
+          <h3 data-i18n="landing.features.1.title">Voice + text first</h3>
+          <p class="mb-0" data-i18n="landing.features.1.text">Filled in low-bandwidth friendly design, on any phone.</p>
+        </div>
+        <div class="feature-card">
+          <h3 data-i18n="landing.features.2.title">Two languages</h3>
+          <p class="mb-0" data-i18n="landing.features.2.text">Switch between Hindi and English everywhere, instantly.</p>
+        </div>
+        <div class="feature-card">
+          <h3 data-i18n="landing.features.3.title">Offline friendly</h3>
+          <p class="mb-0" data-i18n="landing.features.3.text">Schemes cached locally so you can browse without internet.</p>
+        </div>
+        <div class="feature-card">
+          <h3 data-i18n="landing.features.4.title">Privacy first</h3>
+          <p class="mb-0" data-i18n="landing.features.4.text">Your data stays yours. Nothing is sold, ever.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section text-center" aria-labelledby="ctaHeading">
+      <div class="card" style="max-width: 640px; margin: 0 auto;">
+        <h2 id="ctaHeading" data-i18n="landing.cta.title">Ready to find your scheme?</h2>
+        <p data-i18n="landing.cta.text">It takes less than 5 minutes.</p>
+        <div class="hero-actions">
+          <a href="questionnaire.html" class="btn btn-primary" data-i18n="landing.hero.cta">Start Matching</a>
+          <a href="login.html" class="btn btn-ghost" data-i18n="nav.login">Log in</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="siteFooter"></div>
+
+  <script src="js/services/storage.js"></script>
+  <script src="js/services/theme.js"></script>
+  <script src="js/i18n/translations.js"></script>
+  <script src="js/services/i18n.js"></script>
+  <script src="js/services/notifications.js"></script>
+  <script src="js/services/validation.js"></script>
+  <script src="js/data/questions.js"></script>
+  <script src="js/data/schemes.js"></script>
+  <script src="js/services/matching.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/components/navbar.js"></script>
+  <script src="js/components/footer.js"></script>
+  <script src="js/components/progress-ring.js"></script>
+  <script src="js/components/scheme-card.js"></script>
+  <script src="js/components/match-badge.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/pages/landing.js"></script>
+</body>
+</html>

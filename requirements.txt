@@ -1,0 +1,33 @@
+# Python dependencies for ArthSetu backend (Python 3.10+)
+# Frontend needs no packages — pure static HTML/CSS/JS.
+
+# --- Core web framework ---
+fastapi==0.104.0
+uvicorn[standard]==0.24.0
+
+# --- ORM + database ---
+SQLAlchemy==2.0.52
+psycopg2-binary==2.9.13
+
+# --- Validation + configuration ---
+pydantic-settings==2.1.0
+email-validator==2.3.0
+python-dotenv==1.0.0
+python-multipart==0.0.6
+
+# --- Authentication (JWT + password hashing) ---
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# --- AI service hooks (reserved - future AI assistant) ---
+anthropic==0.18.1
+huggingface_hub==1.31.0
+tokenizers==0.23.2
+hf-xet==1.6.0
+
+# --- Testing ---
+pytest==7.4.3
+
+# --- Dev shortcuts ---
+# Backend server:  python run.py  |  uvicorn app.main:app --reload
+# Tests:          python -m unittest discover tests -v

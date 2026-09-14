@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Scheme Details - Arth Setu</title>
+  <script>
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('vittvaani:theme'));
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/typography.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/accessibility.css">
+  <link rel="stylesheet" href="css/print.css">
+  <style>
+    .details-page { max-width: 900px; margin: 0 auto; }
+    .breadcrumb { font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-4); }
+    .breadcrumb a { color: var(--primary-color); }
+    .detail-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-4);
+    }
+    .detail-card h2 {
+      font-size: var(--font-size-lg);
+      padding-bottom: var(--space-2);
+      border-bottom: 2px solid var(--border);
+      margin-bottom: var(--space-4);
+    }
+    .detail-list { list-style: none; }
+    .detail-list li {
+      padding: var(--space-2) 0;
+      border-bottom: 1px dashed var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+    .detail-list li:last-child { border-bottom: none; }
+    .detail-list .label { color: var(--text-secondary); }
+    .tag { display: inline-block; background: var(--bg-tertiary); border: 1px solid var(--border); padding: 2px 10px; border-radius: 999px; font-size: var(--font-size-sm); margin: 0 var(--space-1) var(--space-1) 0; }
+  </style>
+</head>
+<body data-page="scheme-details">
+  <a href="#contentArea" class="skip-link">Skip to scheme details</a>
+  <header id="navbar" class="navbar"></header>
+
+  <main class="container details-page">
+    <div class="breadcrumb">
+      <a href="index.html" data-i18n="nav.home">Home</a> /
+      <a href="results.html" data-i18n="nav.results">Results</a> /
+      <span id="breadcrumbName">Scheme Details</span>
+    </div>
+
+    <div id="loadingState" class="text-center" style="padding: var(--space-7) 0;">
+      <div class="spinner" style="margin: 0 auto;"></div>
+      <p class="mt-4" data-i18n="common.loading">Loading...</p>
+    </div>
+
+    <div id="contentArea" class="hidden"></div>
+  </main>
+
+  <div id="siteFooter"></div>
+
+  <script src="js/services/storage.js"></script>
+  <script src="js/services/theme.js"></script>
+  <script src="js/i18n/translations.js"></script>
+  <script src="js/services/i18n.js"></script>
+  <script src="js/services/notifications.js"></script>
+  <script src="js/services/validation.js"></script>
+  <script src="js/data/questions.js"></script>
+  <script src="js/data/schemes.js"></script>
+  <script src="js/services/matching.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/components/navbar.js"></script>
+  <script src="js/components/footer.js"></script>
+  <script src="js/components/progress-ring.js"></script>
+  <script src="js/components/scheme-card.js"></script>
+  <script src="js/components/match-badge.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/pages/scheme-details.js"></script>
+
+</body>
+</html>
