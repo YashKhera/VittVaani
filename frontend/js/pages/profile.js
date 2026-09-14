@@ -21,6 +21,11 @@
       age_group: document.getElementById("age_group").value,
       gender: document.getElementById("gender").value,
       social_category: document.getElementById("social_category").value,
+      annual_family_income: document.getElementById("annual_family_income").value,
+      education_status: document.getElementById("education_status").value,
+      estimated_project_cost: document.getElementById("estimated_project_cost").value === ""
+        ? null
+        : Number(document.getElementById("estimated_project_cost").value),
       business_name: document.getElementById("business_name").value.trim(),
       business_sector: document.getElementById("business_sector").value,
       business_stage: document.getElementById("business_stage").value,
@@ -33,6 +38,8 @@
     var map = {
       full_name: "full_name", phone_number: "phone_number", state: "state", district: "district",
       age_group: "age_group", gender: "gender", social_category: "social_category",
+      annual_family_income: "annual_family_income", education_status: "education_status",
+      estimated_project_cost: "estimated_project_cost",
       business_name: "business_name", business_sector: "business_sector",
       business_stage: "business_stage", annual_revenue: "annual_revenue", employee_count: "employee_count"
     };
@@ -48,6 +55,8 @@
     fillSelect("state", (window.Questions && Questions.states) || [], "");
     fillSelect("business_sector", (window.Questions && Questions.sectors) || [], "");
     fillSelect("annual_revenue", (window.Questions && Questions.revenueGroups) || [], "");
+    fillSelect("annual_family_income", (window.Questions && Questions.familyIncomeGroups) || [], "");
+    fillSelect("education_status", (window.Questions && Questions.educationStatuses) || [], "");
 
     API.get("/api/profile", Auth.token())
       .then(function (p) {
@@ -55,6 +64,8 @@
         fillSelect("state", Questions.states, p.state);
         fillSelect("business_sector", Questions.sectors, p.business_sector);
         fillSelect("annual_revenue", Questions.revenueGroups, p.annual_revenue);
+        fillSelect("annual_family_income", Questions.familyIncomeGroups, p.annual_family_income);
+        fillSelect("education_status", Questions.educationStatuses, p.education_status);
       })
       .catch(function () { /* no profile yet */ });
 

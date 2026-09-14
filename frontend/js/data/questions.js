@@ -64,6 +64,21 @@
       { value: "50l_plus", en: "Above ₹50 lakh", hi: "₹50 लाख से अधिक" }
     ],
 
+    familyIncomeGroups: [
+      { value: "under_2.5l", en: "Below ₹2.5 lakh", hi: "₹2.5 लाख से कम" },
+      { value: "2.5l_5l", en: "₹2.5–5 lakh", hi: "₹2.5–5 लाख" },
+      { value: "above_5l", en: "Above ₹5 lakh", hi: "₹5 लाख से अधिक" }
+    ],
+
+    educationStatuses: [
+      { value: "school", en: "SSC / School level", hi: "स्कूल स्तर" },
+      { value: "diploma", en: "Diploma", hi: "डिप्लोमा" },
+      { value: "undergraduate", en: "Pursuing graduation", hi: "स्नातक कर रहा/रही हूँ" },
+      { value: "postgraduate", en: "Pursuing post-graduation", hi: "स्नातकोत्तर कर रहा/रही हूँ" },
+      { value: "research", en: "Research / PhD", hi: "शोध / पीएचडी" },
+      { value: "not_applicable", en: "Not a student", hi: "छात्र नहीं हूँ" }
+    ],
+
     ageGroups: [
       { value: "18-25", en: "18 – 25", hi: "18 – 25" },
       { value: "26-35", en: "26 – 35", hi: "26 – 35" },

@@ -112,6 +112,22 @@
             <option value="minority">Minority</option>
           </select>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="annual_family_income" data-i18n="profile.familyIncome">Annual family income</label>
+            <select id="annual_family_income" name="annual_family_income">
+              <option value="">-</option>
+            </select>
+            <small class="text-muted" data-i18n="profile.familyIncome.help">For concessional SC loans (ceiling ₹5L)</small>
+          </div>
+          <div class="form-group">
+            <label for="education_status" data-i18n="profile.educationStatus">Education status</label>
+            <select id="education_status" name="education_status">
+              <option value="">-</option>
+            </select>
+            <small class="text-muted" data-i18n="profile.educationStatus.help">Enables SC education loans</small>
+          </div>
+        </div>
       </div>
 
       <div class="form-section">
@@ -121,6 +137,11 @@
           <input type="text" id="business_name" name="business_name" placeholder="Your business / enterprise name">
         </div>
         <div class="form-row">
+          <div class="form-group">
+            <label for="estimated_project_cost" data-i18n="profile.projectCost">Estimated project cost (₹)</label>
+            <input type="number" id="estimated_project_cost" name="estimated_project_cost" min="0" step="10000" placeholder="e.g. 150000">
+            <small class="text-muted" data-i18n="profile.projectCost.help">Used to pick the right loan size</small>
+          </div>
           <div class="form-group">
             <label for="business_sector" data-i18n="profile.bizSector">Business sector</label>
             <select id="business_sector" name="business_sector">

@@ -68,7 +68,10 @@ class AdvancedMatchingService:
         return [s.lower() for s in normalize_list(scheme.entrepreneur_types)]
 
     def match_sector(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
-        if profile.business_sector and profile.business_sector.lower() in self._sectors(scheme):
+        if not profile.business_sector:
+            return 0
+        sectors = self._sectors(scheme)
+        if "all" in sectors or profile.business_sector.lower() in sectors:
             return self.WEIGHTS["sector"]
         return 0
 

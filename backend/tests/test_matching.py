@@ -66,6 +66,11 @@ class TestAdvancedMatching(unittest.TestCase):
         scheme2 = make_scheme(sectors=["manufacturing"])
         self.assertEqual(self.matcher.match_sector(profile, scheme2), 0)
 
+    def test_sector_match_all_sectors(self):
+        profile = make_profile(business_sector="dairy")
+        scheme = make_scheme(sectors=["all"])
+        self.assertEqual(self.matcher.match_sector(profile, scheme), 30)
+
     def test_location_all_states(self):
         profile = make_profile(state="delhi")
         scheme = make_scheme(states=["all"])
