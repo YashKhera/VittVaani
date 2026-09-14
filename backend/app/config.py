@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     AI_API_KEY: str = ""
     AI_MODEL: str = "claude-3-5-sonnet-20241022"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_MODEL: str = "gemini-3.6-flash"
     FRONTEND_URL: str = "http://localhost:3000"
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

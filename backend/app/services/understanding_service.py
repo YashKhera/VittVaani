@@ -124,13 +124,22 @@ def _extract_tags(description: str, limit: int = 5) -> list[str]:
 def _detect_sector(description: str) -> str | None:
     if not description:
         return None
-    text = description.lower()
-    best_hits = -1
+    text = description.lower().replace("-", " ").replace("_", " ").replace("&", " ")
+    text = re.sub(r"[^\w\s]", " ", text)
+    words = {_singular(w) for w in text.split()}
+    best_hits = 0.0
     best_sector = None
     for sector, keywords in SECTOR_KEYWORDS.items():
-        hits = sum(1 for kw in keywords if kw in text)
-        if hits > best_hits:
-            best_hits = hits
+        score = 0.0
+        for kw in keywords:
+            k = kw.lower().replace("-", " ").replace("_", " ")
+            if " " in k:
+                if k in text:
+                    score += 3.0
+            elif k in words:
+                score += 0.5 + min(len(k), 10) / 10.0
+        if score > best_hits:
+            best_hits = score
             best_sector = sector
     return best_sector if best_hits > 0 else None
 
