@@ -119,6 +119,9 @@ def apply_from_description(
             phone_number=current_user.phone_number or "",
             state=payload.state or "all",
             social_category=payload.social_category or "general",
+            annual_family_income=payload.annual_family_income or "",
+            education_status=payload.education_status or "not_applicable",
+            estimated_project_cost=payload.estimated_project_cost,
             business_sector=ai_sector or "all",
             business_stage=stage or "new",
             description=payload.description,
@@ -131,6 +134,12 @@ def apply_from_description(
             profile.social_category = payload.social_category
         if payload.state:
             profile.state = payload.state
+        if payload.annual_family_income is not None:
+            profile.annual_family_income = payload.annual_family_income
+        if payload.education_status is not None:
+            profile.education_status = payload.education_status
+        if payload.estimated_project_cost is not None:
+            profile.estimated_project_cost = payload.estimated_project_cost
         if ai_sector and not profile.business_sector:
             profile.business_sector = ai_sector
         if stage and not profile.business_stage:

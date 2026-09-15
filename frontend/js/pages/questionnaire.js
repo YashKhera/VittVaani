@@ -12,6 +12,22 @@
   var describeUnderstand = null;
   var lastScene = "";
 
+  window.addEventListener("languagechange", function () {
+    if (mode === "form") {
+      if (steps.length) render();
+      return;
+    }
+    if (lastScene === "summary" && describeUnderstand) {
+      renderDescribeSummary(describeUnderstand);
+      return;
+    }
+    if (lastScene === "describe") {
+      renderDescribe();
+      return;
+    }
+    renderGate();
+  });
+
   // Static questions (Questions.list) whose values are already captured on the
   // profile page — we prefill them, never re-ask them, and only show chips.
   var PROFILE_LOOKUP = [
@@ -23,11 +39,30 @@
     { id: "state", field: "state", kind: "opts", options: "states", labelKey: "questionnaire.auto.state" },
     { id: "business_stage", field: "business_stage", kind: "opts", options: "stages", labelKey: "questionnaire.auto.stage" },
     { id: "annual_revenue", field: "annual_revenue", kind: "opts", options: "revenueGroups", labelKey: "questionnaire.auto.revenue" },
+    { id: "annual_family_income", field: "annual_family_income", kind: "opts", options: "familyIncomeGroups", labelKey: "questionnaire.auto.income" },
+    { id: "education_status", field: "education_status", kind: "opts", options: "educationStatuses", labelKey: "questionnaire.auto.education" },
+    { id: "estimated_project_cost", field: "estimated_project_cost", kind: "text", labelKey: "questionnaire.auto.projectCost" },
     { id: "entrepreneur_type", field: "social_category", kind: "category", labelKey: "questionnaire.auto.category" }
   ];
 
   var POST_PROFILE_IDS = { financial: true, non_financial: true, description: true };
   var FINAL_IDS = ["understand", "review"];
+  var SC_IDS = ["annual_family_income", "education_status", "estimated_project_cost"];
+
+  function isScCategory() {
+    if (profile && profile.social_category === "sc") return true;
+    var et = answers.entrepreneur_type;
+    if (et) {
+      if (Array.isArray(et)) return et.indexOf("sc") !== -1;
+      return String(et).indexOf("sc") !== -1;
+    }
+    return false;
+  }
+
+  function profileHasScFields() {
+    if (!profile) return false;
+    return !!(profile.annual_family_income && profile.education_status && profile.estimated_project_cost);
+  }
 
   function optText(o) {
     return I18n.current() === "hi" ? o.hi : o.en;
@@ -35,6 +70,7 @@
 
   function optionsFor(q) {
     var key = q.options;
+    if (!key) return [];
     if (Array.isArray(key)) return key;
     if (typeof key === "function") return key();
     if (key === "financial" || key === "nonFinancial") return Questions.supportNeeds[key] || [];
@@ -161,7 +197,15 @@
 
     document.getElementById("gateBackBtn").addEventListener("click", renderGate);
     document.getElementById("describeBtn").addEventListener("click", analyzeDescription);
+    var taEl = document.getElementById("describeText");
+    if (taEl) {
+      taEl.addEventListener("input", function () {
+        describeText = taEl.value;
+        saveDraft("describe");
+      });
+    }
     if (sr) bindMic(document.getElementById("micBtn"));
+    saveDraft("describe");
     lastScene = "describe";
   }
 
@@ -203,6 +247,11 @@
       return;
     }
     describeText = text;
+    saveDraft("describe");
+    analyzeText(describeText);
+  }
+
+  function analyzeText(text) {
     var mount = document.getElementById("questionMount");
     mount.innerHTML = '<div class="question-card text-center py-4">' +
       '<div class="spinner"></div><p class="mt-3 text-muted">' + I18n.t("questionnaire.describe.thinking") + "</p></div>";
@@ -263,6 +312,7 @@
       }
       quick += "</div>";
     }
+    quick += scQuickHtml();
 
     var summary = I18n.current() === "hi" ? (u.summary_hi || u.summary_en) : (u.summary_en || u.summary_hi);
     mount.innerHTML =
@@ -281,7 +331,43 @@
 
     document.getElementById("describeEditBtn").addEventListener("click", renderDescribe);
     document.getElementById("describeApplyBtn").addEventListener("click", function () { applyDescription(u); });
+    var scCatChips = document.querySelectorAll('#categoryChips input[name="dsc"]');
+    Array.prototype.forEach.call(scCatChips, function (i) {
+      i.addEventListener("change", toggleScQuick);
+    });
+    toggleScQuick();
+    saveDraft("summary");
     lastScene = "summary";
+  }
+
+  function scQuickHtml() {
+    if (!needCategoryPick() && (!profile || profile.social_category !== "sc")) return "";
+    var always = !!(profile && profile.social_category === "sc");
+    var curIncome = profile && profile.annual_family_income ? profile.annual_family_income : "";
+    var curEdu = profile && profile.education_status ? profile.education_status : "";
+    var curCost = profile && profile.estimated_project_cost ? profile.estimated_project_cost : "";
+    var incomeOpts = Questions.familyIncomeGroups.map(function (o) {
+      return '<option value="' + o.value + '"' + (o.value === curIncome ? " selected" : "") + ">" + optText(o) + "</option>";
+    }).join("");
+    var eduOpts = Questions.educationStatuses.map(function (o) {
+      return '<option value="' + o.value + '"' + (o.value === curEdu ? " selected" : "") + ">" + optText(o) + "</option>";
+    }).join("");
+    return '<div class="describe-picks sc-quick' + (always ? "" : " hidden") + '" id="scQuick"' + (always ? ' data-always="1"' : "") + ">" +
+      '<p class="text-sm text-muted mb-2"><strong>' + I18n.t("questionnaire.sc.title") + "</strong></p>" +
+      '<p class="text-sm text-muted mb-3">' + I18n.t("questionnaire.sc.why") + "</p>" +
+      '<div class="mb-3"><p class="text-sm text-muted mb-2">' + I18n.t("profile.familyIncome") + "</p>" +
+      '<select id="scIncome" class="form-select"><option value="">-</option>' + incomeOpts + "</select></div>" +
+      '<div class="mb-3"><p class="text-sm text-muted mb-2">' + I18n.t("profile.educationStatus") + "</p>" +
+      '<select id="scEducation" class="form-select"><option value="">-</option>' + eduOpts + "</select></div>" +
+      '<div class="mb-3"><p class="text-sm text-muted mb-2">' + I18n.t("profile.projectCost") + "</p>" +
+      '<input id="scCost" type="number" class="form-select" min="0" step="10000" value="' + (curCost || "") + '" placeholder="150000"></div>' +
+      "</div>";
+  }
+
+  function toggleScQuick() {
+    var box = document.getElementById("scQuick");
+    if (!box || box.dataset.always === "1") return;
+    box.classList.toggle("hidden", currentCategoryPick() !== "sc");
   }
 
   function currentCategoryPick() {
@@ -298,16 +384,43 @@
 
   function applyDescription(u) {
     if (!Auth.token()) return;
+    var category = currentCategoryPick();
+    var state = currentStatePick();
+    var income = "";
+    var edu = "";
+    var cost = 0;
+    if (category === "sc") {
+      var incomeEl = document.getElementById("scIncome");
+      var eduEl = document.getElementById("scEducation");
+      var costEl = document.getElementById("scCost");
+      income = incomeEl ? incomeEl.value : "";
+      edu = eduEl ? eduEl.value : "";
+      var costRaw = costEl ? costEl.value.trim() : "";
+      cost = costRaw ? Number(costRaw) : 0;
+    }
     var mount = document.getElementById("questionMount");
     mount.innerHTML = '<div class="question-card text-center py-4"><div class="spinner"></div>' +
       '<p class="mt-3 text-muted">' + I18n.t("questionnaire.describe.applying") + "</p></div>";
     var payload = { description: describeText };
-    var category = currentCategoryPick();
     if (category) payload.social_category = category;
-    var state = currentStatePick();
     if (state) payload.state = state;
+    if (category === "sc") {
+      if (!income || !edu || !cost || cost <= 0) {
+        mount.innerHTML = '<div class="question-card text-center py-4"><p class="text-muted">' +
+          I18n.t("profile.sc.required") + "</p>" +
+          '<button class="btn btn-secondary mt-3" id="applyRetryBtn">' + I18n.t("common.back") + "</button></div>";
+        document.getElementById("applyRetryBtn").addEventListener("click", function () { renderDescribeSummary(u); });
+        return;
+      }
+      payload.annual_family_income = income;
+      payload.education_status = edu;
+      payload.estimated_project_cost = cost;
+    }
     API.post("/api/ai/apply-from-description", payload, Auth.token())
-      .then(function () { window.location.href = "results.html"; })
+      .then(function () {
+        saveDraft("summary");
+        window.location.href = "results.html";
+      })
       .catch(function (err) {
         mount.innerHTML = '<div class="question-card text-center py-4"><p class="text-muted">' +
           (err && err.message ? err.message : I18n.t("questionnaire.describe.failed")) + "</p>" +
@@ -333,6 +446,10 @@
 
   function buildSteps(dynamicQuestions) {
     steps = [];
+    if (!profile) {
+      var cat = Questions.find("entrepreneur_type");
+      if (cat) steps.push(cat);
+    }
     var dyn = dynamicQuestions || [];
     dyn.forEach(function (q) { steps.push(q); });
     ["financial", "non_financial", "description"].forEach(function (id) {
@@ -341,6 +458,12 @@
         if (q) steps.push(q);
       }
     });
+    if (!profileHasScFields()) {
+      SC_IDS.forEach(function (id) {
+        var q = Questions.find(id);
+        if (q) steps.push(q);
+      });
+    }
     FINAL_IDS.forEach(function (id) {
       var q = Questions.find(id);
       if (q) steps.push(q);
@@ -381,7 +504,53 @@
       .catch(function () { if (cb) cb(); });
   }
 
+  function saveDraft(scene) {
+    try {
+      AppStore.saveDescribeDraft({ text: describeText || "", scene: scene || "describe", savedAt: Date.now() });
+    } catch (e) {}
+  }
+
+  function clearDraft() {
+    try {
+      AppStore.clearDescribeDraft();
+    } catch (e) {}
+  }
+
+  function restoreDraft() {
+    var d = null;
+    try { d = AppStore.getDescribeDraft(); } catch (e) {}
+    if (!d || !d.text) return false;
+    mode = "describe";
+    describeText = d.text || "";
+    renderDescribe();
+    if (d.scene === "summary") {
+      setTimeout(function () {
+        if (profile && profile.ai_confirmed) {
+          renderDescribeSummary({
+            sector: profile.ai_sector,
+            stage: profile.business_stage || "new",
+            support_needs: profile.support_needs || [],
+            tags: profile.ai_tags || [],
+            summary_en: "",
+            summary_hi: ""
+          });
+        } else {
+          analyzeText(describeText);
+        }
+      }, 60);
+    }
+    return true;
+  }
+
   function render() {
+    while (step < STEP_TOTAL && steps[step] && steps[step].scOnly && !isScCategory()) {
+      step++;
+    }
+    if (step >= STEP_TOTAL) {
+      renderHeader();
+      submit();
+      return;
+    }
     var q = steps[step];
     var mount = document.getElementById("questionMount");
     var title = I18n.current() === "hi" ? q.title.hi : q.title.en;
@@ -397,6 +566,8 @@
       body = '<textarea id="q-input" rows="4" placeholder="' + help + '">' + (savedValue || "") + "</textarea>";
     } else if (q.type === "text") {
       body = '<input id="q-input" type="text" placeholder="' + help + '" value="' + (savedValue || "") + '" autocomplete="off">';
+    } else if (q.type === "num") {
+      body = '<input id="q-input" type="number" min="0" step="10000" placeholder="' + help + '" value="' + (savedValue || "") + '" autocomplete="off">';
     } else {
       var opts = optionsFor(q);
       var fields = "";
@@ -420,7 +591,7 @@
       '<div class="question-card fade-in">' +
       auto +
       '<h2 class="question-text">' + title + "</h2>" +
-      (help && q.type !== "textarea" && q.type !== "text" ? '<p class="mb-4">' + help + "</p>" : "") +
+      (help && (q.type === "num" || (q.type !== "textarea" && q.type !== "text")) ? '<p class="mb-4">' + help + "</p>" : "") +
       body +
       '<div class="question-actions">' +
       (step > 0 ? '<button class="btn btn-secondary" id="prevBtn">' + I18n.t("common.previous") + "</button>" : '<a class="btn btn-secondary" href="index.html">' + I18n.t("common.cancel") + "</a>") +
@@ -466,7 +637,7 @@
   function collect() {
     var q = steps[step];
     if (q.type === "review" || q.type === "understand") return;
-    if (q.type === "textarea" || q.type === "text") {
+    if (q.type === "textarea" || q.type === "text" || q.type === "num") {
       answers[q.id] = textValue();
       return;
     }
@@ -758,8 +929,16 @@
     step = STEP_TOTAL - 1;
     persist();
 
-    var socialCategory = profile && profile.social_category ? profile.social_category : "general";
-    if (["sc", "st", "obc"].indexOf(socialCategory) === -1) socialCategory = "general";
+    var etVal = ([]).concat(answers.entrepreneur_type || []);
+    var socialCategory = etVal.length ? etVal[0] : (profile && profile.social_category ? profile.social_category : "general");
+    if (["sc", "st", "obc", "pwd"].indexOf(socialCategory) === -1) socialCategory = "general";
+
+    var projCostRaw = answers.estimated_project_cost;
+    var projCost = null;
+    if (projCostRaw !== undefined && projCostRaw !== null && String(projCostRaw).trim() !== "") {
+      var n = Number(projCostRaw);
+      projCost = isNaN(n) ? null : n;
+    }
 
     var payload = {
       full_name: answers.full_name || "",
@@ -767,6 +946,9 @@
       age_group: answers.age_group || "",
       gender: answers.gender || "other",
       social_category: socialCategory,
+      annual_family_income: answers.annual_family_income || "",
+      education_status: answers.education_status || "not_applicable",
+      estimated_project_cost: projCost,
       sector: answers.business_sector,
       business_sector: answers.business_sector,
       state: answers.state,
@@ -833,11 +1015,13 @@
           prefillFromProfile();
           return loadForm();
         }
+        if (restoreDraft()) return;
         renderGate();
       })
       .catch(function () {
         answers = {};
         step = 0;
+        if (restoreDraft()) return;
         renderGate();
       });
   });

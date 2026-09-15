@@ -71,8 +71,10 @@ class AdvancedMatchingService:
         if not profile.business_sector:
             return 0
         sectors = self._sectors(scheme)
-        if "all" in sectors or profile.business_sector.lower() in sectors:
+        if profile.business_sector.lower() in sectors:
             return self.WEIGHTS["sector"]
+        if "all" in sectors:
+            return int(self.WEIGHTS["sector"] * 0.6)
         return 0
 
     def match_support(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
@@ -83,8 +85,13 @@ class AdvancedMatchingService:
         return 0
 
     def match_location(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
-        if profile.state and (profile.state.lower() in self._states(scheme) or "all" in self._states(scheme)):
+        if not profile.state:
+            return 0
+        states = self._states(scheme)
+        if profile.state.lower() in states:
             return self.WEIGHTS["location"]
+        if "all" in states:
+            return int(self.WEIGHTS["location"] * 0.6)
         return 0
 
     def match_stage(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
@@ -106,8 +113,11 @@ class AdvancedMatchingService:
         if gender == "female":
             types.append("woman")
         category = (profile.social_category or "").lower()
-        if category in ("sc", "st", "obc", "minority"):
+        if category in ("sc", "st", "obc", "minority", "pwd"):
             types.append(category)
+        age = (getattr(profile, "age_group", None) or "").strip().lower()
+        if age in ("18-25", "26-35"):
+            types.append("youth")
         return types
 
     def match_entrepreneur_type(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
@@ -164,6 +174,14 @@ class AdvancedMatchingService:
 
     def hard_eligibility(self, profile: EntrepreneurProfile, scheme: Scheme) -> tuple[bool, Optional[str]]:
         """Return (eligible, reason). Reason is non-empty only when ineligible."""
+        scheme_types = self._types(scheme)
+        if scheme_types and "general" not in scheme_types:
+            user_types = self.extract_entrepreneur_types(profile)
+            if "woman" in scheme_types and (profile.gender or "").lower() != "female":
+                return False, "This scheme is reserved for women applicants"
+            if not any(t in scheme_types for t in user_types):
+                return False, "This scheme is reserved for a specific category, gender or age group that does not match your profile"
+
         sc_scheme = bool(scheme.loan_category) and "sc" in self._types(scheme)
         if sc_scheme and (profile.social_category or "").lower() != "sc":
             return False, "This concessional scheme is reserved for Scheduled Caste (SC) applicants"
@@ -260,8 +278,12 @@ class AdvancedMatchingService:
                 "funding_range": self._funding_range(scheme),
                 "processing_time": f"{scheme.processing_days} days" if scheme.processing_days else "Varies",
             })
-        recommendations.sort(key=lambda x: x["match_score"], reverse=True)
+        recommendations.sort(key=lambda x: (x["match_score"], self._specificity(x["scheme"])), reverse=True)
         return recommendations
+
+    def _specificity(self, scheme: Scheme) -> int:
+        sectors, states = self._sectors(scheme), self._states(scheme)
+        return (0 if "all" in sectors else 1) + (0 if "all" in states else 1)
 
     def _funding_range(self, scheme: Scheme) -> str:
         if scheme.loan_min is None and scheme.loan_max is None:

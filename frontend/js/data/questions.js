@@ -173,6 +173,29 @@
         options: "entrepreneurTypes"
       },
       {
+        id: "annual_family_income",
+        type: "single",
+        scOnly: true,
+        title: { en: "What is your family's annual income?", hi: "आपके परिवार की वार्षिक आय क्या है?" },
+        help: { en: "SC concessional loans are for families earning up to ₹5 lakh.", hi: "SC रियायती ऋण ₹5 लाख तक आय वाले परिवारों के लिए हैं।" },
+        options: "familyIncomeGroups"
+      },
+      {
+        id: "education_status",
+        type: "single",
+        scOnly: true,
+        title: { en: "What is your education status?", hi: "आपकी शिक्षा की स्थिति क्या है?" },
+        help: { en: "Students can access SC education loans.", hi: "छात्र SC शिक्षा ऋण के लिए पात्र हो सकते हैं।" },
+        options: "educationStatuses"
+      },
+      {
+        id: "estimated_project_cost",
+        type: "num",
+        scOnly: true,
+        title: { en: "How much will your project cost (₹)?", hi: "आपकी परियोजना की लागत लगभग कितनी है (₹)?" },
+        help: { en: "e.g. 150000 — helps pick micro vs term loan size", hi: "जैसे 150000 — माइक्रो बनाम टर्म ऋण चुनने में मदद करता है" }
+      },
+      {
         id: "financial",
         type: "multi",
         title: { en: "What kind of financial support do you need?", hi: "आपको किस प्रकार की वित्तीय सहायता चाहिए?" },

@@ -212,4 +212,11 @@
     if (!Auth.requireLogin()) return;
     load();
   });
+
+  window.addEventListener("languagechange", function () {
+    if (!Auth || !Auth.isLoggedIn()) return;
+    if (match === null) return;
+    var mount = document.getElementById("resultsMount");
+    if (mount) render(mount);
+  });
 })();

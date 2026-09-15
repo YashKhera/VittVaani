@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var USER_KEYS = ["answers", "lastMatch", "cachedSchemes", "savedIds"];
+  var USER_KEYS = ["answers", "lastMatch", "cachedSchemes", "savedIds", "describeDraft"];
 
   function scoped(key) {
     var uid = (window.Auth && Auth.user() && Auth.user().id) || "anon";
@@ -14,7 +14,8 @@
       answers: "answers",
       lastMatch: "lastMatch",
       cachedSchemes: "cachedSchemes",
-      savedIds: "savedIds"
+      savedIds: "savedIds",
+      describeDraft: "describeDraft"
     },
 
     scopeFor: function (userId) {
@@ -58,6 +59,16 @@
     },
     setLast: function (match) {
       return this.saveLastMatch(match);
+    },
+
+    getDescribeDraft: function () {
+      return VStore.get(scoped(this._keys.describeDraft), null);
+    },
+    saveDescribeDraft: function (draft) {
+      return VStore.set(scoped(this._keys.describeDraft), draft);
+    },
+    clearDescribeDraft: function () {
+      VStore.remove(scoped(this._keys.describeDraft));
     },
 
     clearUserData: function () {

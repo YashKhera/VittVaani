@@ -318,6 +318,50 @@ class TestApplyFromDescription(ApiTestCase):
         self.assertIn("subsidy", prof["support_needs"])
         self.assertEqual(prof["description"], "I run a dairy selling milk and ghee, want subsidy")
 
+    def test_sc_describe_flow_persists_income_education_cost(self):
+        token = self._token()
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "I make papad at home and want a loan to buy a machine",
+            "social_category": "sc",
+            "state": "bihar",
+            "annual_family_income": "2.5l_5l",
+            "education_status": "undergraduate",
+            "estimated_project_cost": 120000,
+        }, headers=self._headers(token))
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["social_category"], "sc")
+        self.assertEqual(prof["annual_family_income"], "2.5l_5l")
+        self.assertEqual(prof["education_status"], "undergraduate")
+        self.assertEqual(prof["estimated_project_cost"], 120000)
+
+    def test_sc_describe_updates_existing_profile_fields(self):
+        token = self._token()
+        self._create_profile(token)
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "want to scale my spice business",
+            "social_category": "sc",
+            "state": "madhya_pradesh",
+            "annual_family_income": "under_2.5l",
+            "education_status": "postgraduate",
+            "estimated_project_cost": 3500000,
+        }, headers=self._headers(token))
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["annual_family_income"], "under_2.5l")
+        self.assertEqual(prof["education_status"], "postgraduate")
+        self.assertEqual(prof["estimated_project_cost"], 3500000)
+
+    def test_sc_describe_without_sc_fields_defaults_clean(self):
+        token = self._token()
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "I want a loan to start a tailoring shop",
+            "social_category": "sc",
+            "state": "odisha",
+        }, headers=self._headers(token))
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["annual_family_income"], "")
+        self.assertEqual(prof["education_status"], "not_applicable")
+        self.assertIsNone(prof["estimated_project_cost"])
+
     def test_understand_gate_response_includes_stage_and_needs(self):
         token = self._token()
         r = self.client.post("/api/ai/understand", json={
@@ -449,6 +493,31 @@ class TestChannelFinance(ApiTestCase):
         recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
         cats = {x["scheme"].get("loan_category") for x in recs}
         self.assertIn("education", cats)
+
+    def test_general_user_excluded_from_sc_reserved_schemes(self):
+        token = self._sc_setup(social_category="general", gender="male")
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        names = {x["scheme"]["name"] for x in recs}
+        reserved = {
+            "National Scheduled Castes Finance and Development Corporation",
+            "National SC-ST Hub Scheme",
+            "Stand-Up India Scheme",
+        }
+        self.assertFalse(names & reserved, "general user must not get SC/ST-reserved schemes")
+
+    def test_sc_user_sees_sc_reserved_schemes(self):
+        token = self._sc_setup(social_category="sc", gender="male")
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        names = {x["scheme"]["name"] for x in recs}
+        self.assertIn("National Scheduled Castes Finance and Development Corporation", names)
+        self.assertNotIn("Stand-Up India Scheme", names, "SC/ST women scheme must not be shown to a male SC applicant")
+
+    def test_sc_woman_sees_women_only_combined_schemes(self):
+        token = self._sc_setup(social_category="sc", gender="female")
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        names = {x["scheme"]["name"] for x in recs}
+        self.assertIn("Stand-Up India Scheme", names)
+        self.assertIn("National Scheduled Castes Finance and Development Corporation", names)
 
 
 class TestSchemes(ApiTestCase):

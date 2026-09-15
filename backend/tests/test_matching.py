@@ -69,12 +69,12 @@ class TestAdvancedMatching(unittest.TestCase):
     def test_sector_match_all_sectors(self):
         profile = make_profile(business_sector="dairy")
         scheme = make_scheme(sectors=["all"])
-        self.assertEqual(self.matcher.match_sector(profile, scheme), 30)
+        self.assertEqual(self.matcher.match_sector(profile, scheme), 18)
 
     def test_location_all_states(self):
         profile = make_profile(state="delhi")
         scheme = make_scheme(states=["all"])
-        self.assertEqual(self.matcher.match_location(profile, scheme), 15)
+        self.assertEqual(self.matcher.match_location(profile, scheme), 9)
 
     def test_location_state_specific(self):
         profile = make_profile(state="maharashtra")
@@ -173,6 +173,74 @@ class TestAdvancedMatching(unittest.TestCase):
         scheme = make_scheme(loan_min=1000000, loan_max=50000000)
         gap = self.matcher.identify_gap(profile, scheme)
         self.assertIsNotNone(gap)
+
+    def test_hard_eligibility_blocks_general_user_from_sc_only_scheme(self):
+        profile = make_profile(gender="male", social_category="general")
+        scheme = make_scheme(entrepreneur_types=["sc"], loan_category=None)
+        eligible, reason = self.matcher.hard_eligibility(profile, scheme)
+        self.assertFalse(eligible)
+        self.assertTrue(reason)
+
+    def test_hard_eligibility_allows_sc_user_sc_only_scheme(self):
+        profile = make_profile(gender="male", social_category="sc")
+        scheme = make_scheme(entrepreneur_types=["sc"], loan_category=None)
+        eligible, _ = self.matcher.hard_eligibility(profile, scheme)
+        self.assertTrue(eligible)
+
+    def test_hard_eligibility_gender_and_age_reserved(self):
+        woman_scheme = make_scheme(entrepreneur_types=["woman"])
+        eligible, _ = self.matcher.hard_eligibility(make_profile(gender="female", social_category="general"), woman_scheme)
+        self.assertTrue(eligible)
+        eligible2, _ = self.matcher.hard_eligibility(make_profile(gender="male", social_category="general"), woman_scheme)
+        self.assertFalse(eligible2)
+
+        youth_scheme = make_scheme(entrepreneur_types=["youth"])
+        eligible3, _ = self.matcher.hard_eligibility(make_profile(gender="male", social_category="general", age_group="26-35"), youth_scheme)
+        self.assertTrue(eligible3)
+        eligible4, _ = self.matcher.hard_eligibility(make_profile(gender="male", social_category="general", age_group="60+"), youth_scheme)
+        self.assertFalse(eligible4)
+
+    def test_hard_eligibility_woman_gate_applies_to_combined_schemes(self):
+        sc_woman_scheme = make_scheme(entrepreneur_types=["sc", "woman"])
+        eligible, reason = self.matcher.hard_eligibility(make_profile(gender="male", social_category="sc"), sc_woman_scheme)
+        self.assertFalse(eligible)
+        self.assertTrue(reason)
+        eligible2, _ = self.matcher.hard_eligibility(make_profile(gender="female", social_category="sc"), sc_woman_scheme)
+        self.assertTrue(eligible2)
+        woman_eligible = self.matcher.hard_eligibility(make_profile(gender="female", social_category="general"), sc_woman_scheme)
+        self.assertTrue(woman_eligible[0])
+
+    def test_hard_eligibility_woman_gate_open_schemes_unaffected(self):
+        open_scheme = make_scheme(entrepreneur_types=["general", "woman"])
+        eligible, _ = self.matcher.hard_eligibility(make_profile(gender="male", social_category="general"), open_scheme)
+        self.assertTrue(eligible)
+
+    def test_hard_eligibility_pwd_category(self):
+        pwd_scheme = make_scheme(entrepreneur_types=["pwd"])
+        eligible, _ = self.matcher.hard_eligibility(make_profile(gender="male", social_category="pwd"), pwd_scheme)
+        self.assertTrue(eligible)
+        eligible2, _ = self.matcher.hard_eligibility(make_profile(gender="male", social_category="general"), pwd_scheme)
+        self.assertFalse(eligible2)
+
+    def test_sector_specific_scheme_outranks_generic(self):
+        profile = make_profile(business_sector="food_processing", state="maharashtra")
+        profile.requirements = [SimpleNamespace(support_type="loan")]
+        generic = make_scheme(name="GenericAll", sectors=["all"], states=["all"], business_stages=["existing"], entrepreneur_types=["general"])
+        specific = make_scheme(name="SectorSpecific", sectors=["food_processing"], states=["all"], business_stages=["existing"], entrepreneur_types=["general"])
+        ranked = self.matcher.rank_recommendations(profile, [generic, specific])
+        self.assertEqual(ranked[0]["scheme"].name, "SectorSpecific")
+
+    def test_state_specificity_orders_by_user_state(self):
+        def with_req(state):
+            p = make_profile(state=state)
+            p.requirements = [SimpleNamespace(support_type="loan")]
+            return p
+        national = make_scheme(name="National", sectors=["all"], states=["all"], business_stages=["existing"], entrepreneur_types=["general"])
+        local = make_scheme(name="StateSpecific", sectors=["all"], states=["maharashtra"], business_stages=["existing"], entrepreneur_types=["general"])
+        order_mah = [r["scheme"].name for r in self.matcher.rank_recommendations(with_req("maharashtra"), [national, local])]
+        order_ker = [r["scheme"].name for r in self.matcher.rank_recommendations(with_req("kerala"), [national, local])]
+        self.assertEqual(order_mah, ["StateSpecific", "National"])
+        self.assertEqual(order_ker, ["National", "StateSpecific"])
 
 
 if __name__ == "__main__":

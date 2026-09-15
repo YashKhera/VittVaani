@@ -12,6 +12,7 @@
       VStore.set(LANG_KEY, lang);
       document.documentElement.lang = lang;
       this.apply();
+      window.dispatchEvent(new Event("languagechange"));
     },
     t: function (key, params) {
       var lang = this.current();

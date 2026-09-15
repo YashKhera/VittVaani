@@ -31,3 +31,6 @@ class ApplyFromDescriptionRequest(BaseModel):
     description: str = ""
     social_category: str | None = None
     state: str | None = None
+    annual_family_income: str | None = None
+    education_status: str | None = None
+    estimated_project_cost: int | None = None

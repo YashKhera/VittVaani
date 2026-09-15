@@ -2,14 +2,30 @@
   "use strict";
   if (!document.body || document.body.dataset.page !== "profile") return;
 
+  function optText(o) {
+    return I18n.current() === "hi" ? (o.hi || o.en) : o.en;
+  }
+
   function fillSelect(id, list, selected) {
     var el = document.getElementById(id);
     if (!el) return;
     var html = '<option value="">-</option>';
     (list || []).forEach(function (o) {
-      html += '<option value="' + o.value + '"' + (String(o.value) === String(selected) ? " selected" : "") + ">" + o.en + "</option>";
+      html += '<option value="' + o.value + '"' + (String(o.value) === String(selected) ? " selected" : "") + ">" + optText(o) + "</option>";
     });
     el.innerHTML = html;
+  }
+
+  function isSc() {
+    var el = document.getElementById("social_category");
+    return el && el.value === "sc";
+  }
+
+  function toggleScPanel() {
+    var panel = document.getElementById("scPanel");
+    if (!panel) return;
+    panel.classList.toggle("hidden", !isSc());
+    panel.setAttribute("aria-hidden", isSc() ? "false" : "true");
   }
 
   function collect() {
@@ -66,13 +82,24 @@
         fillSelect("annual_revenue", Questions.revenueGroups, p.annual_revenue);
         fillSelect("annual_family_income", Questions.familyIncomeGroups, p.annual_family_income);
         fillSelect("education_status", Questions.educationStatuses, p.education_status);
+        toggleScPanel();
       })
       .catch(function () { /* no profile yet */ });
+
+    document.getElementById("social_category").addEventListener("change", toggleScPanel);
 
     document.getElementById("profileForm").addEventListener("submit", function (e) {
       e.preventDefault();
       var errorEl = document.getElementById("formError");
+      errorEl.classList.add("hidden");
       var payload = collect();
+      if (isSc() && (!payload.annual_family_income || !payload.education_status || payload.estimated_project_cost === null)) {
+        errorEl.textContent = I18n.t("profile.sc.required");
+        errorEl.classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      var btn = document.querySelector('#profileForm button[type="submit"]');
       var btn = document.querySelector('#profileForm button[type="submit"]');
       btn.disabled = true;
       btn.textContent = I18n.t("common.loading");
