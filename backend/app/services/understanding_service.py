@@ -75,6 +75,50 @@ SECTOR_KEYWORDS = {
                   "marketplace", "store", "shopping", "seller", "wholesale"],
 }
 
+STAGE_VALUES = ["new", "existing"]
+SUPPORT_NEED_VALUES = ["capital", "subsidy", "training", "marketing", "legal", "tech"]
+
+STAGE_LABELS_EN = {"new": "business is just starting", "existing": "business is already running"}
+STAGE_LABELS_HI = {"new": "व्यवसाय अभी शुरू हो रहा है", "existing": "व्यवसाय पहले से चल रहा है"}
+
+SUPPORT_NEED_LABELS_EN = {
+    "capital": "loan / startup capital",
+    "subsidy": "subsidy / grant",
+    "training": "training & skill upskilling",
+    "marketing": "marketing & market access",
+    "legal": "registration & compliance",
+    "tech": "technology & digitization",
+}
+
+STAGE_EXISTING_KEYWORDS = [
+    "running", "existing", "already", "established", "since", "years", "year",
+    "months", "month", "saal", "chal raha", "chala raha", "chal rahi", "chala rahi",
+    "operating", "operate", "work done", "2 years", "3 years", "4 years", "5 years",
+    "last year", "last 6 months", "doing this", "continue", "also running",
+]
+STAGE_NEW_KEYWORDS = [
+    "start", "startup", "starting", "idea", "planning", "plan to", "planning to",
+    "begin", "beginning", "newly", "new", "shuru", "surv kar", "shuru kar",
+    "karna chahta", "karna chahti", "want to start", "thinking of", "just started",
+    "about to start", "will start", "wish to start", "want start",
+    "want to set up", "set up", "open a", "open my", "start my",
+]
+
+SUPPORT_NEED_KEYWORDS = {
+    "capital": ["loan", "capital", "finance", "fund", "mudra", "udhar", "karz", "finance",
+                "paise", "paisa", "money", "cash", "credit", "borrow", "lend", "lihaj"],
+    "subsidy": ["subsidy", "grant", "anudan", "sabsidee", "razor", "subvention", "interest subsidy",
+                "interest-free", "free"],
+    "training": ["training", "skill", "sikh", "course", "workshop", "upskill", "training program",
+                 "learn", "classes", "coaching", "mentor"],
+    "marketing": ["market", "marketing", "sell", "selling", "buyer", "buyers", "export", "ecommerce",
+                  "online sell", "brand", "sales", "customer", "customers", "bazaar", "showroom"],
+    "legal": ["registration", "license", "licence", "legal", "gst", "complian", "udyam", "fssai",
+              "pan card", "ap-scheme", "certificate", "vendor", "trade"],
+    "tech": ["machine", "technology", "digital", "computer", "internet", "equipment", "app",
+             "software", "website", "automation", "machinery", "tool", "tools", "solar"],
+}
+
 STOPWORDS = {
     "a", "an", "the", "and", "or", "but", "if", "of", "in", "on", "at", "to", "for",
     "with", "from", "by", "my", "our", "your", "is", "are", "was", "were", "am", "be",
@@ -144,6 +188,39 @@ def _detect_sector(description: str) -> str | None:
     return best_sector if best_hits > 0 else None
 
 
+def _detect_stage(description: str) -> str | None:
+    if not description:
+        return None
+    text = description.lower()
+    hits = {"existing": 0.0, "new": 0.0}
+    for kw in STAGE_EXISTING_KEYWORDS:
+        if kw in text:
+            hits["existing"] += 2.0 if len(kw.split()) > 1 else 1.0
+    for kw in STAGE_NEW_KEYWORDS:
+        if kw in text:
+            hits["new"] += 2.0 if len(kw.split()) > 1 else 1.0
+    if hits["existing"] == hits["new"]:
+        return None
+    return "existing" if hits["existing"] > hits["new"] else "new"
+
+
+def _detect_support_needs(description: str) -> list[str]:
+    if not description:
+        return []
+    text = description.lower().replace("-", " ")
+    found = []
+    for need, keywords in SUPPORT_NEED_KEYWORDS.items():
+        for kw in keywords:
+            if kw in text:
+                found.append(need)
+                break
+    return found
+
+
+def _detect_stage_safely(description: str) -> str | None:
+    return _detect_stage(description)
+
+
 class UnderstandingService:
     def __init__(self):
         self.gemini_enabled = bool(settings.GEMINI_API_KEY)
@@ -180,11 +257,18 @@ class UnderstandingService:
             "unorganised, awkward, or partial English. Understand their true intent.\n\n"
             f"Sector options (pick closest): {', '.join(SECTOR_VALUES)}. "
             "You can also pick 'null' if nothing fits.\n\n"
+            f"Stage options (pick closest): {', '.join(STAGE_VALUES)}. "
+            "'new' only if the owner says they are starting/planning soon; 'existing' only if the "
+            "business is already running. Use 'null' if unclear.\n\n"
+            f"Support needs (pick ALL that apply from): {', '.join(SUPPORT_NEED_VALUES)}. "
+            "Use an empty array if none are mentioned.\n\n"
             "Business description (raw user text):\n" + (description or "(empty)") + "\n\n"
             "Return ONLY valid JSON with exactly these keys:\n"
             '{'
             '"sector": "one sector value or null", '
             '"tags": ["up to 5 short topic tags in English like: bakery, catering"], '
+            '"stage": "one stage value or null", '
+            '"support_needs": ["all applicable need values or empty array"], '
             '"summary_en": "1-2 simple sentences explaining, in plain words, what the user means their '
             'business is about and what kind of help they might need", '
             '"summary_hi": "same explanation translated into simple Hinglish/Hindi"'
@@ -215,9 +299,18 @@ class UnderstandingService:
         if not isinstance(tags, list):
             tags = _extract_tags(description)
         tags = [str(t)[:24] for t in tags[:5]]
+        stage = data.get("stage")
+        if stage not in STAGE_VALUES:
+            stage = None
+        needs = data.get("support_needs") or []
+        if not isinstance(needs, list):
+            needs = _detect_support_needs(description)
+        needs = [str(n).strip().lower() for n in needs if str(n).strip().lower() in SUPPORT_NEED_VALUES]
         return {
             "sector": sector,
             "tags": tags,
+            "stage": stage,
+            "support_needs": needs,
             "summary_en": str(data.get("summary_en") or "").strip(),
             "summary_hi": str(data.get("summary_hi") or "").strip(),
         }
@@ -225,6 +318,8 @@ class UnderstandingService:
     def fallback_understand(self, description: str) -> dict:
         sector = _detect_sector(description)
         tags = _extract_tags(description)
+        stage = _detect_stage(description)
+        needs = _detect_support_needs(description)
         if not description or not description.strip():
             summary_en = "I could not find a description yet. Please type a few lines about your business so I can understand it."
             summary_hi = "मुझे अभी विवरण नहीं मिला। कृपया अपने व्यवसाय के बारे में कुछ पंक्तियाँ लिखें ताकि मैं समझ सकूँ।"
@@ -252,9 +347,17 @@ class UnderstandingService:
                 f"{', '.join(tags) if tags else 'आपके मुख्य विषय'}। "
                 "आप और जानकारी दे सकते हैं या इसे ठीक कर सकते हैं।"
             )
+        if stage and stage in STAGE_LABELS_EN:
+            summary_en += f" Your {STAGE_LABELS_EN[stage]}."
+            summary_hi += f" आपका व्यवसाय — {STAGE_LABELS_HI[stage]}।"
+        if needs:
+            need_labels_en = ", ".join(SUPPORT_NEED_LABELS_EN[n] for n in needs)
+            summary_en += f" You seem to need help with: {need_labels_en}."
         return {
             "sector": sector,
             "tags": tags,
+            "stage": stage,
+            "support_needs": needs,
             "summary_en": summary_en,
             "summary_hi": summary_hi,
         }

@@ -280,6 +280,73 @@ class TestUnderstanding(ApiTestCase):
         self.assertTrue(moved, "confirming a food sector should lift at least one food scheme")
 
 
+class TestApplyFromDescription(ApiTestCase):
+    def test_creates_minimal_profile_without_form(self):
+        token = self._token()
+        r = self.client.post("/api/ai/apply-from-description", json={
+            "description": "I want to start a bakery business from home and need a loan, and help selling online",
+            "social_category": "sc",
+            "state": "punjab",
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["sector"], "food_processing")
+        self.assertEqual(data["stage"], "new")
+        self.assertIn("capital", data["support_needs"])
+        self.assertIn("marketing", data["support_needs"])
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["social_category"], "sc")
+        self.assertEqual(prof["state"], "punjab")
+        self.assertTrue(prof["ai_confirmed"])
+        self.assertEqual(prof["business_sector"], "food_processing")
+        self.assertEqual(prof["business_stage"], "new")
+        self.assertIn("capital", prof["support_needs"])
+
+    def test_existing_profile_keeps_sector_updates_identity(self):
+        token = self._token()
+        self._create_profile(token, sector="ecommerce", state="punjab")
+        r = self.client.post("/api/ai/apply-from-description", json={
+            "description": "I run a dairy selling milk and ghee, want subsidy",
+            "social_category": "sc",
+            "state": "haryana",
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["business_sector"], "ecommerce")
+        self.assertEqual(prof["social_category"], "sc")
+        self.assertEqual(prof["state"], "haryana")
+        self.assertIn("subsidy", prof["support_needs"])
+        self.assertEqual(prof["description"], "I run a dairy selling milk and ghee, want subsidy")
+
+    def test_understand_gate_response_includes_stage_and_needs(self):
+        token = self._token()
+        r = self.client.post("/api/ai/understand", json={
+            "description": "I want to start a solar panel business and need a loan for equipment"
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertIn("stage", data)
+        self.assertIn("support_needs", data)
+        self.assertEqual(data["sector"], "solar_energy")
+
+    def test_confirm_persists_stage_and_support_needs(self):
+        token = self._token()
+        self._create_profile(token)
+        r = self.client.post("/api/ai/confirm", json={
+            "description": "scaling up my food business",
+            "sector": "food_processing",
+            "tags": ["pickle"],
+            "stage": "existing",
+            "support_needs": ["capital", "training"],
+            "summary_en": "Scaling",
+            "summary_hi": "विस्तार",
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        saved = self.client.get("/api/ai/understanding", headers=self._headers(token)).json()
+        self.assertEqual(saved["stage"], "existing")
+        self.assertIn("capital", saved["support_needs"])
+
+
 class TestChannelFinance(ApiTestCase):
     def _sc_payload(self, **overrides):
         payload = {

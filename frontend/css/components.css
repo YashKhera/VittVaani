@@ -279,6 +279,37 @@ label {
 .question-text { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-4); }
 .question-actions { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-5); }
 
+.gate-options { display: grid; gap: var(--space-4); margin-top: var(--space-5); }
+.gate-card {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  text-align: left; padding: var(--space-5);
+  border: 2px solid var(--border); border-radius: var(--radius-lg, 16px);
+  background: var(--bg-primary); cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+.gate-card:hover { transform: translateY(-2px); border-color: var(--primary-color); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+.gate-card-primary { border-color: var(--primary-color); background: var(--bg-tertiary); }
+.gate-card-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+.gate-card-sub { font-size: 0.92rem; color: var(--text-secondary); }
+.mic-row { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-2); flex-wrap: wrap; }
+.chip-group { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip-opt {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border: 1.5px solid var(--border);
+  border-radius: 999px; cursor: pointer; font-size: 0.9rem; color: var(--text-secondary);
+  background: var(--bg-primary);
+}
+.chip-opt:has(input:checked) { border-color: var(--primary-color); background: var(--bg-tertiary); color: var(--primary-color); font-weight: 600; }
+.chip-opt input { width: auto; accent-color: var(--primary-color); margin: 0; }
+.describe-picks { margin: var(--space-5) 0; padding: var(--space-4); border: 1px dashed var(--border); border-radius: var(--radius-lg, 12px); }
+.form-select {
+  width: 100%; padding: 10px 12px; border-radius: var(--radius-md, 8px);
+  border: 1.5px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 1rem;
+}
+.tag-chip-sector { background: rgba(38, 166, 91, 0.14); color: #1b7a43; }
+.tag-chip-stage { background: rgba(38, 132, 199, 0.14); color: #1a6ba3; }
+
 .progress-ring-wrap { position: relative; width: 120px; height: 120px; margin: 0 auto var(--space-4); }
 .progress-ring-value {
   position: absolute; inset: 0;

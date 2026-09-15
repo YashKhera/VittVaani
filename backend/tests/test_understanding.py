@@ -3,6 +3,8 @@ import unittest
 from app.services.gemini_client import is_live_model
 from app.services.understanding_service import (
     _detect_sector,
+    _detect_stage,
+    _detect_support_needs,
     UnderstandingService,
 )
 
@@ -54,6 +56,44 @@ class TestSectorDetection(unittest.TestCase):
         self.assertIsNone(_detect_sector(desc))
 
 
+class TestStageDetection(unittest.TestCase):
+    def test_existing_stage(self):
+        self.assertEqual(_detect_stage("I run a dairy farm since 3 years"), "existing")
+        self.assertEqual(_detect_stage("mera business chal raha hai 2 saal se"), "existing")
+        self.assertEqual(_detect_stage("already running for last 6 months"), "existing")
+
+    def test_new_stage(self):
+        self.assertEqual(_detect_stage("I want to start a bakery business"), "new")
+        self.assertEqual(_detect_stage("planning to open a tuition centre"), "new")
+        self.assertEqual(_detect_stage("main restaurant shuru karna chahta hoon"), "new")
+
+    def test_ambiguous_returns_none(self):
+        self.assertIsNone(_detect_stage(""))
+        self.assertIsNone(_detect_stage("I have a shop"))
+        self.assertIsNone(_detect_stage(None))
+
+
+class TestSupportNeedsDetection(unittest.TestCase):
+    def test_loan_and_training(self):
+        needs = _detect_support_needs("I want a loan for the shop and training for my workers")
+        self.assertIn("capital", needs)
+        self.assertIn("training", needs)
+
+    def test_subsidy_and_marketing(self):
+        needs = _detect_support_needs("need subsidy and help selling my products online")
+        self.assertIn("subsidy", needs)
+        self.assertIn("marketing", needs)
+
+    def test_legal_and_tech(self):
+        needs = _detect_support_needs("need GST registration and a computer machine")
+        self.assertIn("legal", needs)
+        self.assertIn("tech", needs)
+
+    def test_empty(self):
+        self.assertEqual(_detect_support_needs(""), [])
+        self.assertEqual(_detect_support_needs(None), [])
+
+
 class TestFallbackUnderstand(unittest.TestCase):
     def test_provider_neutral_keys(self):
         out = fallback_understand("I sell handicraft baskets and pottery")
@@ -61,6 +101,12 @@ class TestFallbackUnderstand(unittest.TestCase):
         self.assertTrue(out["summary_en"])
         self.assertTrue(out["summary_hi"])
         self.assertTrue(out["tags"])
+
+    def test_extracted_stage_and_needs(self):
+        out = fallback_understand("I run a dairy since 3 years and want a loan to buy a milking machine")
+        self.assertEqual(out["stage"], "existing")
+        self.assertIn("capital", out["support_needs"])
+        self.assertIn("tech", out["support_needs"])
 
     def test_empty_description(self):
         out = fallback_understand("")

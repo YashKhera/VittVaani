@@ -35,6 +35,11 @@ rates 6.5-8%).
   screen. Instead, a dynamic follow-up step asks genuinely relevant questions
   about the person's sector, stage and education (curated bank, optionally
   AI-generated with automatic fallback).
+- **Describe-first onboarding** — opening the questionnaire lets you choose:
+  "just describe your business" (type or *speak* — the AI extracts sector,
+  stage and support needs, then a 2-tap category/state pick completes the
+  profile automatically) **or** "answer a step-by-step form". Users who find
+  forms hard never have to touch one.
 - **Bilingual UI** — English ↔ Hindi toggle, persisted per user.
 - **Dark mode** — OS-preference aware and persisted.
 - **Saved schemes** — bookmark and revisit schemes anytime.
@@ -130,7 +135,8 @@ Base: `http://127.0.0.1:8001/api` · Interactive docs: `/docs`
 | POST   | `/questionnaire/dynamic`         | Personalised follow-up questions (AI or curated bank) |
 | GET    | `/schemes`  `/schemes/{id}`     | Scheme catalog |
 | GET    | `/ai/understanding`             | Current AI understanding |
-| POST   | `/ai/understand`                | AI infers sector/tags from business description |
+| POST   | `/ai/understand`                | AI infers sector/tags/stage/support needs from a description |
+| POST   | `/ai/apply-from-description`    | Builds the profile automatically from a description (no form needed) |
 | POST   | `/ai/confirm`                   | Accept the AI understanding (unlocks recommendations) |
 | POST   | `/recommendations`              | Ranked, personalized schemes (+ top-5 AI explanations) |
 | POST/DELETE | `/saved-schemes/{id}`      | Bookmark / remove |

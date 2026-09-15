@@ -7,6 +7,10 @@
   var STEP_TOTAL = 0;
   var step = 0;
   var answers = {};
+  var mode = null;
+  var describeText = "";
+  var describeUnderstand = null;
+  var lastScene = "";
 
   // Static questions (Questions.list) whose values are already captured on the
   // profile page — we prefill them, never re-ask them, and only show chips.
@@ -95,6 +99,236 @@
     if (!sector) return "";
     var list = Questions.sectors.filter(function (s) { return s.value === sector; });
     return list.length ? optText(list[0]) : sector;
+  }
+
+  function pickText(list, value) {
+    var o = list.filter(function (x) { return x.value === value; })[0];
+    return o ? optText(o) : (value || "");
+  }
+
+  function stateOptions() {
+    return (Questions.states || []).filter(function (s) { return s.value !== "all"; });
+  }
+
+  function renderGate() {
+    mode = null;
+    var mount = document.getElementById("questionMount");
+    mount.innerHTML =
+      '<div class="question-card fade-in">' +
+      '<h1 class="question-text" style="font-size:1.4rem">' + I18n.t("questionnaire.gate.title") + "</h1>" +
+      '<p class="text-muted mb-4">' + I18n.t("questionnaire.gate.sub") + "</p>" +
+      '<div class="gate-options">' +
+      '<button class="gate-card gate-card-primary" id="gateDescribeBtn">' +
+      '<span class="gate-card-title">' + I18n.t("questionnaire.gate.describeTitle") + "</span>" +
+      '<span class="gate-card-sub">' + I18n.t("questionnaire.gate.describeSub") + "</span>" +
+      '</button>' +
+      '<button class="gate-card" id="gateFormBtn">' +
+      '<span class="gate-card-title">' + I18n.t("questionnaire.gate.formTitle") + "</span>" +
+      '<span class="gate-card-sub">' + I18n.t("questionnaire.gate.formSub") + "</span>" +
+      "</button>" +
+      "</div>" +
+      (profile ? "" : '<p class="text-sm text-muted mt-4">' + I18n.t("questionnaire.gate.noProfileNote") + "</p>") +
+      "</div>";
+
+    document.getElementById("gateDescribeBtn").addEventListener("click", function () {
+      mode = "describe";
+      renderDescribe();
+    });
+    document.getElementById("gateFormBtn").addEventListener("click", function () {
+      mode = "form";
+      loadForm();
+    });
+
+    renderHeader();
+  }
+
+  function renderDescribe() {
+    var mount = document.getElementById("questionMount");
+    var sr = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    var mic = sr ? '<button class="btn btn-secondary" id="micBtn" type="button">' + I18n.t("questionnaire.describe.mic") + "</button>" : "";
+    var placeholder = I18n.current() === "hi" ? "जैसे: मैं घर से पापड़ और मसाले बनाती हूँ और उन्हें बेचना चाहती हूँ। मुझे ऋण की ज़रूरत है।" : "e.g. I make papad and spices at home and want to sell them. I need a loan to buy a machine.";
+    mount.innerHTML =
+      '<div class="question-card fade-in">' +
+      '<h2 class="question-text">' + I18n.t("questionnaire.describe.title") + "</h2>" +
+      '<p class="mb-4">' + I18n.t("questionnaire.describe.help") + "</p>" +
+      '<textarea id="describeText" rows="5" placeholder="' + placeholder + '">' + escapeHtml(describeText) + "</textarea>" +
+      '<p class="mic-row' + (mic ? "" : " hidden") + '"><span class="text-sm text-muted">' + I18n.t("questionnaire.describe.micHint") + "</span> " + mic + "</p>" +
+      '<div class="question-actions">' +
+      '<button class="btn btn-secondary" id="gateBackBtn">' + I18n.t("common.back") + "</button>" +
+      '<button class="btn btn-primary" id="describeBtn">' + I18n.t("questionnaire.describe.analyze") + "</button>" +
+      "</div>" +
+      "</div>";
+
+    document.getElementById("gateBackBtn").addEventListener("click", renderGate);
+    document.getElementById("describeBtn").addEventListener("click", analyzeDescription);
+    if (sr) bindMic(document.getElementById("micBtn"));
+    lastScene = "describe";
+  }
+
+  function bindMic(btn) {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var rec = new SR();
+    rec.lang = I18n.current() === "hi" ? "hi-IN" : "en-IN";
+    rec.continuous = false;
+    rec.interimResults = true;
+    btn.addEventListener("click", function () {
+      document.getElementById("describeText").focus();
+      rec.start();
+    });
+    rec.onstart = function () {
+      btn.textContent = I18n.t("questionnaire.describe.micListening");
+      btn.classList.add("btn-primary");
+    };
+    rec.onresult = function (e) {
+      var text = "";
+      for (var i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      var ta = document.getElementById("describeText");
+      if (ta) { ta.value = text; ta.dispatchEvent(new Event("input")); }
+    };
+    rec.onend = function () {
+      btn.textContent = I18n.t("questionnaire.describe.mic");
+      btn.classList.remove("btn-primary");
+    };
+    rec.onerror = function () {
+      btn.textContent = I18n.t("questionnaire.describe.mic");
+      btn.classList.remove("btn-primary");
+    };
+  }
+
+  function analyzeDescription() {
+    var ta = document.getElementById("describeText");
+    var text = ta ? ta.value.trim() : "";
+    if (!text) {
+      Notify.warning(I18n.t("common.required"));
+      return;
+    }
+    describeText = text;
+    var mount = document.getElementById("questionMount");
+    mount.innerHTML = '<div class="question-card text-center py-4">' +
+      '<div class="spinner"></div><p class="mt-3 text-muted">' + I18n.t("questionnaire.describe.thinking") + "</p></div>";
+    API.post("/api/ai/understand", { description: text }, Auth.token())
+      .then(function (u) {
+        describeUnderstand = u;
+        renderDescribeSummary(u);
+      })
+      .catch(function () {
+        mount.innerHTML = '<div class="question-card text-center py-4"><p class="text-muted">' + I18n.t("questionnaire.describe.failed") + "</p>" +
+          '<button class="btn btn-secondary mt-3" id="describeRetryBtn">' + I18n.t("questionnaire.understand.reunderstand") + "</button></div>";
+        document.getElementById("describeRetryBtn").addEventListener("click", renderDescribe);
+      });
+  }
+
+  function needCategoryPick() {
+    return !(profile && profile.social_category && ["sc", "st", "obc", "pwd", "general"].indexOf(profile.social_category) !== -1);
+  }
+
+  function needStatePick() {
+    return !(profile && profile.state && profile.state !== "all");
+  }
+
+  function renderDescribeSummary(u) {
+    var mount = document.getElementById("questionMount");
+    var needs = u.support_needs || [];
+    var stageKey = u.stage === "new" ? "new" : (u.stage === "existing" ? "existing" : null);
+    var sector = sectorLabel(u.sector);
+
+    var chips = "";
+    if (sector) chips += '<span class="tag-chip tag-chip-sector">' + escapeHtml(sector) + "</span>";
+    if (stageKey) chips += '<span class="tag-chip tag-chip-stage">' + (I18n.current() === "hi"
+      ? (stageKey === "new" ? "अभी शुरू हो रहा है" : "पहले से चल रहा है")
+      : (stageKey === "new" ? "New venture" : "Already running")) + "</span>";
+    needs.forEach(function (n) {
+      chips += '<span class="tag-chip">' + escapeHtml(I18n.t("questionnaire.describe.need." + n)) + "</span>";
+    });
+
+    var quick = "";
+    if (needCategoryPick() || needStatePick()) {
+      quick += '<div class="describe-picks">';
+      if (needCategoryPick()) {
+        quick += '<div class="mb-3"><p class="text-sm text-muted mb-2">' + I18n.t("questionnaire.describe.pickCategory") + "</p>" +
+          '<div class="chip-group" id="categoryChips">' +
+          Questions.entrepreneurTypes.map(function (c) {
+            return '<label class="chip-opt"><input type="radio" name="dsc" value="' + c.value + '"> ' + optText(c) + "</label>";
+          }).join("") +
+          "</div></div>";
+      }
+      if (needStatePick()) {
+        var cur = (profile && profile.state) ? profile.state : "all";
+        quick += '<div class="mb-3"><p class="text-sm text-muted mb-2">' + I18n.t("questionnaire.describe.pickState") + "</p>" +
+          '<select id="describeState" class="form-select">' +
+          stateOptions().map(function (s) {
+            return '<option value="' + s.value + '"' + (s.value === cur ? " selected" : "") + ">" + optText(s) + "</option>";
+          }).join("") +
+          "</select></div>";
+      }
+      quick += "</div>";
+    }
+
+    var summary = I18n.current() === "hi" ? (u.summary_hi || u.summary_en) : (u.summary_en || u.summary_hi);
+    mount.innerHTML =
+      '<div class="question-card fade-in">' +
+      '<h2 class="question-text">' + I18n.t("questionnaire.describe.summaryTitle") + "</h2>" +
+      '<div class="understanding-tip">' +
+      (summary ? '<p class="understanding-summary">' + escapeHtml(summary) + "</p>" : "") +
+      (chips ? '<p>' + chips + "</p>" : "") +
+      "</div>" +
+      quick +
+      '<div class="question-actions">' +
+      '<button class="btn btn-secondary" id="describeEditBtn">' + I18n.t("questionnaire.describe.edit") + "</button>" +
+      '<button class="btn btn-primary btn-lg" id="describeApplyBtn">' + I18n.t("questionnaire.describe.apply") + "</button>" +
+      "</div>" +
+      "</div>";
+
+    document.getElementById("describeEditBtn").addEventListener("click", renderDescribe);
+    document.getElementById("describeApplyBtn").addEventListener("click", function () { applyDescription(u); });
+    lastScene = "summary";
+  }
+
+  function currentCategoryPick() {
+    if (!needCategoryPick()) return profile.social_category;
+    var checked = document.querySelector('#categoryChips input[name="dsc"]:checked');
+    return checked ? checked.value : null;
+  }
+
+  function currentStatePick() {
+    var sel = document.getElementById("describeState");
+    if (sel) return sel.value;
+    return profile && profile.state ? profile.state : null;
+  }
+
+  function applyDescription(u) {
+    if (!Auth.token()) return;
+    var mount = document.getElementById("questionMount");
+    mount.innerHTML = '<div class="question-card text-center py-4"><div class="spinner"></div>' +
+      '<p class="mt-3 text-muted">' + I18n.t("questionnaire.describe.applying") + "</p></div>";
+    var payload = { description: describeText };
+    var category = currentCategoryPick();
+    if (category) payload.social_category = category;
+    var state = currentStatePick();
+    if (state) payload.state = state;
+    API.post("/api/ai/apply-from-description", payload, Auth.token())
+      .then(function () { window.location.href = "results.html"; })
+      .catch(function (err) {
+        mount.innerHTML = '<div class="question-card text-center py-4"><p class="text-muted">' +
+          (err && err.message ? err.message : I18n.t("questionnaire.describe.failed")) + "</p>" +
+          '<button class="btn btn-secondary mt-3" id="applyRetryBtn">' + I18n.t("common.next") + "</button></div>";
+        document.getElementById("applyRetryBtn").addEventListener("click", function () { renderDescribeSummary(u); });
+      });
+  }
+
+  function loadForm() {
+    var token = Auth.token();
+    return API.post("/api/questionnaire/dynamic", { answers: answers }, token)
+      .then(function (dyn) {
+        buildSteps((dyn && dyn.questions) || []);
+        if (step >= STEP_TOTAL) step = STEP_TOTAL - 1;
+        render();
+      })
+      .catch(function () {
+        buildSteps([]);
+        if (step >= STEP_TOTAL) step = STEP_TOTAL - 1;
+        render();
+      });
   }
 
   function buildSteps(dynamicQuestions) {
@@ -501,9 +735,21 @@
       ProgressRing.render(ring, { size: 96, stroke: 8, value: positionPercent(), label: I18n.t("questionnaire.ring") });
     }
     var label = document.getElementById("stepLabel");
-    if (label) label.textContent = I18n.t("questionnaire.sub", { step: step + 1, total: STEP_TOTAL });
+    if (label) {
+      if (STEP_TOTAL > 0) {
+        label.textContent = I18n.t("questionnaire.sub", { step: step + 1, total: STEP_TOTAL });
+      } else {
+        label.textContent = I18n.t("questionnaire.startLabel");
+      }
+    }
     var counter = document.getElementById("markedCounter");
-    if (counter) counter.textContent = I18n.t("questionnaire.marked", { pct: answeredPercent() });
+    if (counter) {
+      if (STEP_TOTAL > 0) {
+        counter.textContent = I18n.t("questionnaire.marked", { pct: answeredPercent() });
+      } else {
+        counter.textContent = "";
+      }
+    }
   }
 
   function submit() {
@@ -572,35 +818,27 @@
 
     var token = Auth.token();
 
-    function start() {
-      API.get("/api/profile", token, { skipAuthRedirect: true })
-        .then(function (p) {
-          profile = p;
+    API.get("/api/profile", token, { skipAuthRedirect: true })
+      .then(function (p) { profile = p; })
+      .catch(function () { profile = null; })
+      .then(function () {
+        return API.get("/api/questionnaire/progress", token, { skipAuthRedirect: true });
+      })
+      .then(function (prog) {
+        answers = (prog && prog.answers && typeof prog.answers === "object") ? prog.answers : {};
+        step = (prog && typeof prog.step === "number") ? prog.step : 0;
+        var hasStarted = step > 0 || Object.keys(answers).length > 0;
+        if (hasStarted) {
+          mode = "form";
           prefillFromProfile();
-          return API.get("/api/questionnaire/progress", token, { skipAuthRedirect: true });
-        })
-        .then(function (prog) {
-          answers = (prog && prog.answers && typeof prog.answers === "object") ? prog.answers : {};
-          prefillFromProfile();
-          step = (prog && typeof prog.step === "number") ? prog.step : 0;
-          return API.post("/api/questionnaire/dynamic", { answers: answers }, token);
-        })
-        .then(function (dyn) {
-          buildSteps((dyn && dyn.questions) || []);
-          if (step >= STEP_TOTAL) step = STEP_TOTAL - 1;
-          render();
-        })
-        .catch(function (err) {
-          if (err && err.status === 404) {
-            window.location.href = "profile.html";
-            return;
-          }
-          buildSteps([]);
-          if (step >= STEP_TOTAL) step = STEP_TOTAL - 1;
-          render();
-        });
-    }
-
-    start();
+          return loadForm();
+        }
+        renderGate();
+      })
+      .catch(function () {
+        answers = {};
+        step = 0;
+        renderGate();
+      });
   });
 })();
