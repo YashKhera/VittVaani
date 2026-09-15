@@ -3,9 +3,16 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies.auth import get_current_user
+from app.models.profile import EntrepreneurProfile
 from app.models.questionnaire_progress import QuestionnaireProgress
 from app.models.user import User
-from app.schemas.questionnaire import ProgressPayload, ProgressResponse
+from app.schemas.questionnaire import (
+    DynamicQuestionRequest,
+    DynamicQuestionResponse,
+    ProgressPayload,
+    ProgressResponse,
+)
+from app.services.dynamic_question_service import DynamicQuestionService
 
 router = APIRouter(prefix="/questionnaire", tags=["questionnaire"])
 
@@ -41,3 +48,26 @@ def clear_progress(current_user: User = Depends(get_current_user), db: Session =
     db.query(QuestionnaireProgress).filter(QuestionnaireProgress.user_id == current_user.id).delete()
     db.commit()
     return None
+
+
+@router.post("/dynamic", response_model=DynamicQuestionResponse)
+def get_dynamic_questions(
+    payload: DynamicQuestionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return the next genuinely relevant questions for this applicant.
+
+    Profile basics (name, sector, stage, income, category…) are never re-asked;
+    the returned questions are personalised follow-ups derived from the bank,
+    or AI-generated when the model is available.
+    """
+    profile = (
+        db.query(EntrepreneurProfile)
+        .filter(EntrepreneurProfile.user_id == current_user.id)
+        .first()
+    )
+    if profile is None:
+        return DynamicQuestionResponse(questions=[])
+    questions, source = DynamicQuestionService().get_dynamic_questions(profile, payload.answers)
+    return DynamicQuestionResponse(questions=questions, source=source)

@@ -2,9 +2,28 @@
   "use strict";
   if (!document.body || document.body.dataset.page !== "questionnaire") return;
 
-  var STEP_TOTAL = Questions.list.length;
+  var profile = null;
+  var steps = [];
+  var STEP_TOTAL = 0;
   var step = 0;
   var answers = {};
+
+  // Static questions (Questions.list) whose values are already captured on the
+  // profile page — we prefill them, never re-ask them, and only show chips.
+  var PROFILE_LOOKUP = [
+    { id: "full_name", field: "full_name", kind: "text", labelKey: "questionnaire.auto.name" },
+    { id: "phone_number", field: "phone_number", kind: "text", labelKey: "questionnaire.auto.phone" },
+    { id: "age_group", field: "age_group", kind: "opts", options: "ageGroups", labelKey: "questionnaire.auto.age" },
+    { id: "gender", field: "gender", kind: "opts", options: "genders", labelKey: "questionnaire.auto.gender" },
+    { id: "business_sector", field: "business_sector", kind: "opts", options: "sectors", labelKey: "questionnaire.auto.sector" },
+    { id: "state", field: "state", kind: "opts", options: "states", labelKey: "questionnaire.auto.state" },
+    { id: "business_stage", field: "business_stage", kind: "opts", options: "stages", labelKey: "questionnaire.auto.stage" },
+    { id: "annual_revenue", field: "annual_revenue", kind: "opts", options: "revenueGroups", labelKey: "questionnaire.auto.revenue" },
+    { id: "entrepreneur_type", field: "social_category", kind: "category", labelKey: "questionnaire.auto.category" }
+  ];
+
+  var POST_PROFILE_IDS = { financial: true, non_financial: true, description: true };
+  var FINAL_IDS = ["understand", "review"];
 
   function optText(o) {
     return I18n.current() === "hi" ? o.hi : o.en;
@@ -12,6 +31,7 @@
 
   function optionsFor(q) {
     var key = q.options;
+    if (Array.isArray(key)) return key;
     if (typeof key === "function") return key();
     if (key === "financial" || key === "nonFinancial") return Questions.supportNeeds[key] || [];
     return Questions[key] || [];
@@ -27,9 +47,9 @@
   }
 
   function answeredCount() {
-    return Questions.list.filter(function (q) {
-      var v = answers[q.id];
+    return steps.filter(function (q) {
       if (q.type === "review") return false;
+      var v = answers[q.id];
       if (q.type === "understand") return !!(v && v.understand_confirmed === true);
       if (q.type === "textarea" || q.type === "text") return !!(v && String(v).trim());
       if (q.type === "multi") return v && v.length > 0;
@@ -40,6 +60,74 @@
   function answeredPercent() {
     var total = STEP_TOTAL - 1;
     return total > 0 ? Math.round((answeredCount() / total) * 100) : 0;
+  }
+
+  function profileFilledCount() {
+    var n = 0;
+    PROFILE_LOOKUP.forEach(function (l) {
+      if (prefilledValue(l)) n++;
+    });
+    return n;
+  }
+
+  function prefilledValue(l) {
+    if (!profile) return null;
+    if (l.kind === "category") return profile.social_category || null;
+    var v = profile[l.field];
+    return (v === undefined || v === null || v === "") ? null : v;
+  }
+
+  function prefillFromProfile() {
+    PROFILE_LOOKUP.forEach(function (l) {
+      var raw = prefilledValue(l);
+      if (!raw) return;
+      if (answers && Object.prototype.hasOwnProperty.call(answers, l.id)) return;
+      if (l.kind === "category") {
+        var map = { sc: "sc", st: "st", obc: "obc" };
+        answers[l.id] = map[raw] ? map[raw] : (raw === "general" ? "general" : undefined);
+      } else {
+        answers[l.id] = raw;
+      }
+    });
+  }
+
+  function sectorLabel(sector) {
+    if (!sector) return "";
+    var list = Questions.sectors.filter(function (s) { return s.value === sector; });
+    return list.length ? optText(list[0]) : sector;
+  }
+
+  function buildSteps(dynamicQuestions) {
+    steps = [];
+    var dyn = dynamicQuestions || [];
+    dyn.forEach(function (q) { steps.push(q); });
+    ["financial", "non_financial", "description"].forEach(function (id) {
+      if (POST_PROFILE_IDS[id]) {
+        var q = Questions.find(id);
+        if (q) steps.push(q);
+      }
+    });
+    FINAL_IDS.forEach(function (id) {
+      var q = Questions.find(id);
+      if (q) steps.push(q);
+    });
+    STEP_TOTAL = steps.length;
+  }
+
+  function autoNote() {
+    var filled = [];
+    PROFILE_LOOKUP.forEach(function (l) { if (prefilledValue(l)) filled.push(l.labelKey); });
+    if (!filled.length) return "";
+
+    var chips = filled.map(function (k) {
+      return '<span class="tag-chip">' + I18n.t(k) + " ✓</span>";
+    }).join(" ");
+    var sub = I18n.t("questionnaire.auto.sub", { sector: sectorLabel(profile ? profile.business_sector : "") || "" });
+    return '<div class="auto-fill-note">' +
+      '<p class="text-sm text-muted mb-2"><strong>' + I18n.t("questionnaire.auto.title") + "</strong></p>" +
+      '<p class="text-sm mb-2">' + sub + "</p>" +
+      '<p class="mb-0">' + chips + "</p>" +
+      "</div>";
   }
 
   var persistTimer = null;
@@ -60,7 +148,7 @@
   }
 
   function render() {
-    var q = Questions.list[step];
+    var q = steps[step];
     var mount = document.getElementById("questionMount");
     var title = I18n.current() === "hi" ? q.title.hi : q.title.en;
     var help = q.help ? (I18n.current() === "hi" ? q.help.hi : q.help.en) : "";
@@ -92,8 +180,11 @@
       body = fields;
     }
 
+    var auto = step === 0 && q.type !== "review" && q.type !== "understand" ? autoNote() : "";
+
     mount.innerHTML =
       '<div class="question-card fade-in">' +
+      auto +
       '<h2 class="question-text">' + title + "</h2>" +
       (help && q.type !== "textarea" && q.type !== "text" ? '<p class="mb-4">' + help + "</p>" : "") +
       body +
@@ -139,7 +230,7 @@
   }
 
   function collect() {
-    var q = Questions.list[step];
+    var q = steps[step];
     if (q.type === "review" || q.type === "understand") return;
     if (q.type === "textarea" || q.type === "text") {
       answers[q.id] = textValue();
@@ -172,12 +263,6 @@
 
   function understandingSummary(u) {
     return I18n.current() === "hi" ? (u.summary_hi || u.summary_en) : (u.summary_en || u.summary_hi);
-  }
-
-  function sectorLabel(sector) {
-    if (!sector) return "";
-    var list = Questions.sectors.filter(function (s) { return s.value === sector; });
-    return list.length ? optText(list[0]) : sector;
   }
 
   function renderUnderstand(q) {
@@ -331,7 +416,7 @@
   }
 
   function onNext() {
-    var q = Questions.list[step];
+    var q = steps[step];
     if (q.type !== "review") {
       collect();
       if (!hasValue(q)) {
@@ -352,35 +437,54 @@
     render();
   }
 
+  function displayValue(q, val) {
+    if (val === undefined || val === null || val === "") return "—";
+    if (q.type === "multi") {
+      return ([]).concat(val).map(function (v) {
+        var o = optionsFor(q).filter(function (x) { return x.value === v; })[0];
+        return o ? optText(o) : v;
+      }).join(", ") || "—";
+    }
+    var o = optionsFor(q).filter(function (x) { return x.value === val; })[0];
+    return o ? optText(o) : String(val);
+  }
+
+  function reviewItem(label, display) {
+    return '<div class="breakdown-item"><span class="text-sm">' + label + "</span><strong class=\"text-sm\">" + display + "</strong></div>";
+  }
+
   function buildReview() {
     var html = '<div class="card" style="text-align:left"><h3 class="mb-4">' + I18n.t("questionnaire.review") + "</h3>";
-    var qs = Questions.list;
-    for (var i = 0; i < qs.length; i++) {
-      var q = qs[i];
+
+    if (profileFilledCount()) {
+      html += '<h4 class="text-sm text-muted mb-2">' + I18n.t("questionnaire.review.fromProfile") + "</h4>";
+      PROFILE_LOOKUP.forEach(function (l) {
+        var raw = prefilledValue(l);
+        if (!raw) return;
+        var q = Questions.find(l.id);
+        if (!q) return;
+        var display = l.kind === "category"
+          ? (function () { var o = optionsFor(q).filter(function (x) { return x.value === answers[l.id]; })[0]; return o ? optText(o) : (answers[l.id] || raw); })()
+          : displayValue(q, answers[l.id]);
+        html += reviewItem(I18n.current() === "hi" ? q.title.hi : q.title.en, display);
+      });
+    }
+
+    for (var i = 0; i < steps.length; i++) {
+      var q = steps[i];
       if (q.type === "review" || q.type === "textarea") continue;
       var val = answers[q.id];
       var labelText = I18n.current() === "hi" ? q.title.hi : q.title.en;
-      var display = "";
-      var opts = optionsFor(q);
-      if (q.type === "multi") {
-        display = ([]).concat(val || []).map(function (v) {
-          var o = opts.filter(function (x) { return x.value === v; })[0];
-          return o ? optText(o) : v;
-        }).join(", ") || "—";
-      } else {
-        var o = opts.filter(function (x) { return x.value === val; })[0];
-        display = o ? optText(o) : (val || "—");
-      }
-      html += '<div class="breakdown-item"><span class="text-sm">' + labelText + "</span><strong class=\"text-sm\">" + display + "</strong></div>";
+      html += reviewItem(labelText, displayValue(q, val));
     }
     if (answers.description) {
-      html += '<div class="breakdown-item"><span class="text-sm">' + I18n.t("profile.description") + "</span><strong class=\"text-sm\">" + escapeHtml(answers.description) + "</strong></div>";
+      html += reviewItem(I18n.t("profile.description"), escapeHtml(answers.description));
     }
     if (answers.understand && answers.understand.understand_confirmed === true) {
       var ua = answers.understand;
       var usum = I18n.current() === "hi" ? (ua.summary_hi || ua.summary_en) : (ua.summary_en || ua.summary_hi);
       if (usum) {
-        html += '<div class="breakdown-item"><span class="text-sm">' + I18n.t("questionnaire.understand.label") + "</span><strong class=\"text-sm\">" + escapeHtml(usum) + "</strong></div>";
+        html += reviewItem(I18n.t("questionnaire.understand.label"), escapeHtml(usum));
       }
     }
     return html + "</div>";
@@ -408,11 +512,8 @@
     step = STEP_TOTAL - 1;
     persist();
 
-    var entrepreneurType = ([]).concat(answers.entrepreneur_type || []);
-    var socialCategory = "general";
-    if (entrepreneurType.indexOf("sc") !== -1) socialCategory = "sc";
-    else if (entrepreneurType.indexOf("st") !== -1) socialCategory = "st";
-    else if (entrepreneurType.indexOf("obc") !== -1) socialCategory = "obc";
+    var socialCategory = profile && profile.social_category ? profile.social_category : "general";
+    if (["sc", "st", "obc"].indexOf(socialCategory) === -1) socialCategory = "general";
 
     var payload = {
       full_name: answers.full_name || "",
@@ -425,7 +526,7 @@
       state: answers.state,
       business_stage: answers.business_stage,
       annual_revenue: answers.annual_revenue,
-      entrepreneur_type: entrepreneurType.join(",") || null,
+      entrepreneur_type: ([]).concat(answers.entrepreneur_type || []).join(",") || null,
       support_needs: ([]).concat(answers.financial || [], answers.non_financial || [])
     };
 
@@ -469,25 +570,37 @@
   document.addEventListener("DOMContentLoaded", function () {
     if (!Auth.requireLogin()) return;
 
-    function proceed() {
-      API.get("/api/questionnaire/progress", Auth.token(), { skipAuthRedirect: true })
+    var token = Auth.token();
+
+    function start() {
+      API.get("/api/profile", token, { skipAuthRedirect: true })
         .then(function (p) {
-          answers = (p && p.answers) || {};
-          step = (p && typeof p.step === "number") ? p.step : 0;
+          profile = p;
+          prefillFromProfile();
+          return API.get("/api/questionnaire/progress", token, { skipAuthRedirect: true });
+        })
+        .then(function (prog) {
+          answers = (prog && prog.answers && typeof prog.answers === "object") ? prog.answers : {};
+          prefillFromProfile();
+          step = (prog && typeof prog.step === "number") ? prog.step : 0;
+          return API.post("/api/questionnaire/dynamic", { answers: answers }, token);
+        })
+        .then(function (dyn) {
+          buildSteps((dyn && dyn.questions) || []);
           if (step >= STEP_TOTAL) step = STEP_TOTAL - 1;
           render();
         })
-        .catch(function () { render(); });
+        .catch(function (err) {
+          if (err && err.status === 404) {
+            window.location.href = "profile.html";
+            return;
+          }
+          buildSteps([]);
+          if (step >= STEP_TOTAL) step = STEP_TOTAL - 1;
+          render();
+        });
     }
 
-    API.get("/api/profile", Auth.token(), { skipAuthRedirect: true })
-      .then(proceed)
-      .catch(function (err) {
-        if (err && err.status === 404) {
-          window.location.href = "profile.html";
-          return;
-        }
-        proceed();
-      });
+    start();
   });
 })();

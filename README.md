@@ -30,8 +30,11 @@ rates 6.5-8%).
   ceiling, outside the category, or with project costs above the loan ceiling.
 - **Explanations that matter** — top matches get a short plain-language AI
   "why it fits you" summary (generated concurrently to keep latency low).
-- **Adaptive questionnaire** — a short branching flow (9 questions) that skips
-  irrelevant follow-ups.
+- **Adaptive questionnaire** — profile basics (name, state, category, stage,
+  income…) are never re-asked: they are prefilled from the profile and marked on
+  screen. Instead, a dynamic follow-up step asks genuinely relevant questions
+  about the person's sector, stage and education (curated bank, optionally
+  AI-generated with automatic fallback).
 - **Bilingual UI** — English ↔ Hindi toggle, persisted per user.
 - **Dark mode** — OS-preference aware and persisted.
 - **Saved schemes** — bookmark and revisit schemes anytime.
@@ -124,6 +127,7 @@ Base: `http://127.0.0.1:8001/api` · Interactive docs: `/docs`
 | POST   | `/profile`                      | Create profile |
 | PUT    | `/profile`                      | Update profile |
 | GET/PUT| `/questionnaire/progress`       | Save/resume questionnaire answers |
+| POST   | `/questionnaire/dynamic`         | Personalised follow-up questions (AI or curated bank) |
 | GET    | `/schemes`  `/schemes/{id}`     | Scheme catalog |
 | GET    | `/ai/understanding`             | Current AI understanding |
 | POST   | `/ai/understand`                | AI infers sector/tags from business description |

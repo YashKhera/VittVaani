@@ -241,6 +241,15 @@ label {
   margin: var(--space-2) 0 var(--space-5);
   text-align: left;
 }
+.auto-fill-note {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-bottom: 2px solid rgba(102, 126, 234, 0.35);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  text-align: left;
+}
 .understanding-confirmed-note {
   display: inline-block;
   margin-bottom: var(--space-3);
