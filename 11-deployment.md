@@ -1,6 +1,6 @@
 # 11 · Deployment & Setup Runbook
 
-**Project:** ArthSetu — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 ---
 

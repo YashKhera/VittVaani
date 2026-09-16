@@ -1,6 +1,6 @@
 # 09 · Testing Strategy
 
-**Project:** ArthSetu — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 ---
 

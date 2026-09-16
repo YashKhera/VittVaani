@@ -1,6 +1,6 @@
 # 06 · Database Schema
 
-**Project:** ArthSetu — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
 **Engine:** SQLite (dev, `vittvaani.db`) ⇄ PostgreSQL (prod)
 
 ORM models live in `backend/app/models/*`.

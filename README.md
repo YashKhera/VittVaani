@@ -3,7 +3,8 @@
 > AI-powered government scheme analyzer for **marginalized Indian entrepreneurs**.
 > Smart India Hackathon 2026 · Team VittVaani
 
-Arth Setu ("wealth bridge" in Hindi) is the flagship product of **VittVaani** — it
+**VittVaani** — an AI-powered government scheme analyzer for **marginalized
+Indian entrepreneurs** — it
 helps women, SC/ST/OBC, persons with disabilities and rural micro-entrepreneurs
 discover the **government schemes they are actually eligible for** — not just a
 generic list. Tell us about your business once, and get ranked,
@@ -64,7 +65,7 @@ rates 6.5-8%).
 ## 📁 Repository Layout
 
 ```
-Arth Setu/
+VittVaani/
 ├── backend/                  # FastAPI application
 │   ├── app/
 │   │   ├── routers/          # auth, profile, questionnaire, schemes,

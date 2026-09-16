@@ -1,6 +1,6 @@
 # 12 · Roadmap
 
-**Project:** ArthSetu — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
 Reference PRD: [`01-PRD.md`](./01-PRD.md) · Milestones M0–M5
 
 ---

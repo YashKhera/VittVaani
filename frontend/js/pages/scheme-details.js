@@ -73,7 +73,7 @@
       '<p class="mb-3">' + (scheme.processing_days ? esc(I18n.t("details.processing")) + ": " + esc(scheme.processing_days) + " days" : "") + "</p>" +
       (scheme.official_url || scheme.application_url
         ? '<a class="btn btn-primary" href="' + esc(scheme.official_url || scheme.application_url) + '" target="_blank" rel="noopener">' + esc(I18n.t("details.website")) + "</a>"
-        : '<div class="text-sm">' + (I18n.t("details.contact")) + ": helpline@arthsetu.gov.in</div>"));
+        : '<div class="text-sm">' + (I18n.t("details.contact")) + ": helpline@vittvaani.gov.in</div>"));
 
     mount.innerHTML =
       '<div class="card mb-4">' +

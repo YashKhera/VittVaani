@@ -1,4 +1,4 @@
-# Python dependencies for ArthSetu backend (Python 3.10+)
+# Python dependencies for VittVaani backend (Python 3.10+)
 # Frontend needs no packages — pure static HTML/CSS/JS.
 
 # --- Core web framework ---

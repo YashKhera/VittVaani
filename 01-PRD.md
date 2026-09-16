@@ -1,6 +1,6 @@
 # 01 · Product Requirements Document (PRD)
 
-**Project:** ArthSetu — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
 **Team:** VittVaani · **Event:** Smart India Hackathon 2026
 **Status:** v1.0 (Approved)
 
@@ -8,14 +8,14 @@
 
 ## 1. Product Summary
 
-ArthSetu is a web application that helps marginalized Indian entrepreneurs
+VittVaani is a web application that helps marginalized Indian entrepreneurs
 (women, SC/ST/OBC, PwD, rural micro-entrepreneurs) discover and apply for the
 government schemes they are actually eligible for. Instead of forcing users to
-search through scattered government websites and PDFs, ArthSetu asks a short,
+search through scattered government websites and PDFs, VittVaani asks a short,
 adaptive questionnaire and returns a ranked list of schemes personalized to the
 user's profile, business, location, and needs.
 
-> "Setu" means **bridge** in Hindi — ArthSetu bridges the information gap between
+> VittVaani helps bridge the information gap between
 > government schemes and the entrepreneurs who qualify for them.
 
 ## 2. Problem Statement
