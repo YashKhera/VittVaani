@@ -3,7 +3,7 @@
   if (!document.body || document.body.dataset.page !== "profile") return;
 
   function optText(o) {
-    return I18n.current() === "hi" ? (o.hi || o.en) : o.en;
+    return I18n.loc(o);
   }
 
   function fillSelect(id, list, selected) {

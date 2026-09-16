@@ -244,6 +244,20 @@ class TestUnderstanding(ApiTestCase):
         self.assertEqual(data["sector"], "food_processing")
         self.assertIn("pickle", data["tags"])
         self.assertTrue(data["summary_en"])
+        self.assertEqual(data["summary_loc"], "")
+
+    def test_understand_regional_language_fallback(self):
+        token = self._setup()
+        r = self.client.post("/api/ai/understand", json={
+            "description": "I make pickles and namkeen in my small kitchen",
+            "language": "pa",
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["provider"], "builtin")
+        # builtin fallback serves English text as summary_loc for regional languages
+        self.assertEqual(data["summary_loc"], data["summary_en"])
+        self.assertTrue(data["summary_loc"])
 
     def test_confirm_persists_and_profile_includes_fields(self):
         token = self._setup()

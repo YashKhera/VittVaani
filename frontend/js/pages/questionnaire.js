@@ -65,7 +65,7 @@
   }
 
   function optText(o) {
-    return I18n.current() === "hi" ? o.hi : o.en;
+    return I18n.loc(o);
   }
 
   function optionsFor(q) {
@@ -182,7 +182,11 @@
     var mount = document.getElementById("questionMount");
     var sr = window.SpeechRecognition || window.webkitSpeechRecognition || null;
     var mic = sr ? '<button class="btn btn-secondary" id="micBtn" type="button">' + I18n.t("questionnaire.describe.mic") + "</button>" : "";
-    var placeholder = I18n.current() === "hi" ? "जैसे: मैं घर से पापड़ और मसाले बनाती हूँ और उन्हें बेचना चाहती हूँ। मुझे ऋण की ज़रूरत है।" : "e.g. I make papad and spices at home and want to sell them. I need a loan to buy a machine.";
+    var placeholder = I18n.current() === "hi"
+      ? "जैसे: मैं घर से पापड़ और मसाले बनाती हूँ और उन्हें बेचना चाहती हूँ। मुझे ऋण की ज़रूरत है।"
+      : I18n.current() === "en"
+        ? "e.g. I make papad and spices at home and want to sell them. I need a loan to buy a machine."
+        : I18n.t("questionnaire.describe.placeholder") || "e.g. I make papad and spices at home and want to sell them. I need a loan to buy a machine.";
     mount.innerHTML =
       '<div class="question-card fade-in">' +
       '<h2 class="question-text">' + I18n.t("questionnaire.describe.title") + "</h2>" +
@@ -212,7 +216,7 @@
   function bindMic(btn) {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     var rec = new SR();
-    rec.lang = I18n.current() === "hi" ? "hi-IN" : "en-IN";
+    rec.lang = I18n.current() === "en" ? "en-IN" : I18n.current();
     rec.continuous = false;
     rec.interimResults = true;
     btn.addEventListener("click", function () {
@@ -283,9 +287,9 @@
 
     var chips = "";
     if (sector) chips += '<span class="tag-chip tag-chip-sector">' + escapeHtml(sector) + "</span>";
-    if (stageKey) chips += '<span class="tag-chip tag-chip-stage">' + (I18n.current() === "hi"
-      ? (stageKey === "new" ? "अभी शुरू हो रहा है" : "पहले से चल रहा है")
-      : (stageKey === "new" ? "New venture" : "Already running")) + "</span>";
+    if (stageKey) chips += '<span class="tag-chip tag-chip-stage">' + (stageKey === "new"
+      ? I18n.loc({ hi: "अभी शुरू हो रहा है", en: "New venture", pa: "ਨਵਾਂ ਉੱਦਮ" })
+      : I18n.loc({ hi: "पहले से चल रहा है", en: "Already running", pa: "ਪਹਿਲਾਂ ਤੋਂ ਚੱਲ ਰਿਹਾ" })) + "</span>";
     needs.forEach(function (n) {
       chips += '<span class="tag-chip">' + escapeHtml(I18n.t("questionnaire.describe.need." + n)) + "</span>";
     });
@@ -314,7 +318,7 @@
     }
     quick += scQuickHtml();
 
-    var summary = I18n.current() === "hi" ? (u.summary_hi || u.summary_en) : (u.summary_en || u.summary_hi);
+    var summary = I18n.summary(u);
     mount.innerHTML =
       '<div class="question-card fade-in">' +
       '<h2 class="question-text">' + I18n.t("questionnaire.describe.summaryTitle") + "</h2>" +
@@ -401,7 +405,7 @@
     var mount = document.getElementById("questionMount");
     mount.innerHTML = '<div class="question-card text-center py-4"><div class="spinner"></div>' +
       '<p class="mt-3 text-muted">' + I18n.t("questionnaire.describe.applying") + "</p></div>";
-    var payload = { description: describeText };
+    var payload = { description: describeText, language: I18n.current() };
     if (category) payload.social_category = category;
     if (state) payload.state = state;
     if (category === "sc") {
@@ -553,8 +557,8 @@
     }
     var q = steps[step];
     var mount = document.getElementById("questionMount");
-    var title = I18n.current() === "hi" ? q.title.hi : q.title.en;
-    var help = q.help ? (I18n.current() === "hi" ? q.help.hi : q.help.en) : "";
+    var title = I18n.loc(q.title);
+    var help = q.help ? I18n.loc(q.help) : "";
     var savedValue = answers[q.id];
 
     var body = "";
@@ -667,7 +671,7 @@
   }
 
   function understandingSummary(u) {
-    return I18n.current() === "hi" ? (u.summary_hi || u.summary_en) : (u.summary_en || u.summary_hi);
+    return I18n.summary(u);
   }
 
   function renderUnderstand(q) {
@@ -696,14 +700,15 @@
       return;
     }
     mount.innerHTML = '<div class="text-center py-4"><div class="spinner"></div><p class="mt-3 text-muted">' + I18n.t("questionnaire.understand.think") + "</p></div>";
-    API.post("/api/ai/understand", { description: desc }, Auth.token())
+    API.post("/api/ai/understand", { description: desc, language: I18n.current() }, Auth.token())
       .then(function (u) {
         answers._understandDraft = {
           description: desc,
           sector: u.sector,
           tags: u.tags || [],
           summary_en: u.summary_en || "",
-          summary_hi: u.summary_hi || ""
+          summary_hi: u.summary_hi || "",
+          summary_loc: u.summary_loc || ""
         };
         persist();
         renderUnderstandingResult(mount, u, false);
@@ -805,14 +810,15 @@
     var mount = document.getElementById("understandingMount");
     if (!mount) return;
     mount.innerHTML = '<div class="text-center py-4"><div class="spinner"></div><p class="mt-3 text-muted">' + I18n.t("questionnaire.understand.think") + "</p></div>";
-    API.post("/api/ai/understand", { description: text }, Auth.token())
+    API.post("/api/ai/understand", { description: text, language: I18n.current() }, Auth.token())
       .then(function (u) {
         answers._understandDraft = {
           description: text,
           sector: u.sector,
           tags: u.tags || [],
           summary_en: u.summary_en || "",
-          summary_hi: u.summary_hi || ""
+          summary_hi: u.summary_hi || "",
+          summary_loc: u.summary_loc || ""
         };
         persist();
         renderUnderstandingResult(mount, u, false);
@@ -871,7 +877,7 @@
         var display = l.kind === "category"
           ? (function () { var o = optionsFor(q).filter(function (x) { return x.value === answers[l.id]; })[0]; return o ? optText(o) : (answers[l.id] || raw); })()
           : displayValue(q, answers[l.id]);
-        html += reviewItem(I18n.current() === "hi" ? q.title.hi : q.title.en, display);
+        html += reviewItem(I18n.loc(q.title), display);
       });
     }
 
@@ -879,7 +885,7 @@
       var q = steps[i];
       if (q.type === "review" || q.type === "textarea") continue;
       var val = answers[q.id];
-      var labelText = I18n.current() === "hi" ? q.title.hi : q.title.en;
+      var labelText = I18n.loc(q.title);
       html += reviewItem(labelText, displayValue(q, val));
     }
     if (answers.description) {
@@ -887,7 +893,7 @@
     }
     if (answers.understand && answers.understand.understand_confirmed === true) {
       var ua = answers.understand;
-      var usum = I18n.current() === "hi" ? (ua.summary_hi || ua.summary_en) : (ua.summary_en || ua.summary_hi);
+      var usum = I18n.summary(ua);
       if (usum) {
         html += reviewItem(I18n.t("questionnaire.understand.label"), escapeHtml(usum));
       }

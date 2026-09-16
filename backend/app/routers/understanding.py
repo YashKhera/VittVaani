@@ -39,7 +39,7 @@ def _requirement_types(db: Session, profile: EntrepreneurProfile) -> list[str]:
 
 @router.post("/understand", response_model=UnderstandResponse)
 def understand(payload: UnderstandRequest, current_user: User = Depends(get_current_user)):
-    result = understanding_service.understand(payload.description or "")
+    result = understanding_service.understand(payload.description or "", payload.language or "en")
     return UnderstandResponse(
         sector=result.get("sector"),
         tags=result.get("tags") or [],
@@ -47,6 +47,7 @@ def understand(payload: UnderstandRequest, current_user: User = Depends(get_curr
         support_needs=result.get("support_needs") or [],
         summary_en=result.get("summary_en") or "",
         summary_hi=result.get("summary_hi") or "",
+        summary_loc=result.get("summary_loc") or "",
         provider=result.get("provider") or "builtin",
     )
 
@@ -75,6 +76,7 @@ def confirm_understanding(
         support_needs=_requirement_types(db, profile),
         summary_en=profile.ai_summary_en or "",
         summary_hi=profile.ai_summary_hi or "",
+        summary_loc="",
         provider=understanding_service.provider,
     )
 
@@ -102,7 +104,7 @@ def apply_from_description(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    result = understanding_service.understand(payload.description or "")
+    result = understanding_service.understand(payload.description or "", payload.language or "en")
     ai_sector = result.get("sector")
     stage = result.get("stage")
     tags = result.get("tags") or []
@@ -161,5 +163,6 @@ def apply_from_description(
         support_needs=_requirement_types(db, profile),
         summary_en=profile.ai_summary_en or "",
         summary_hi=profile.ai_summary_hi or "",
+        summary_loc=result.get("summary_loc") or "",
         provider=understanding_service.provider,
     )

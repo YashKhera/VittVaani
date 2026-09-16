@@ -250,7 +250,7 @@ class UnderstandingService:
         except Exception:
             return ""
 
-    def _llm_prompt(self, description: str) -> str:
+    def _llm_prompt(self, description: str, language: str = "en") -> str:
         return (
             "You are a supportive assistant that helps an Indian small-business owner find the "
             "right government schemes. The owner writes about their business freely - it may be "
@@ -271,8 +271,11 @@ class UnderstandingService:
             '"support_needs": ["all applicable need values or empty array"], '
             '"summary_en": "1-2 simple sentences explaining, in plain words, what the user means their '
             'business is about and what kind of help they might need", '
-            '"summary_hi": "same explanation translated into simple Hinglish/Hindi"'
-            '}'
+            '"summary_hi": "same explanation translated into simple Hinglish/Hindi", '
+            + ('"summary_loc": "same explanation in ' + language + ' language, keep it simple and warm"'
+                if language not in ("en", "hi") else
+                '"summary_loc": ""')
+            + '}'
         )
 
     def _parse_llm(self, raw: str, description: str) -> dict | None:
@@ -313,9 +316,10 @@ class UnderstandingService:
             "support_needs": needs,
             "summary_en": str(data.get("summary_en") or "").strip(),
             "summary_hi": str(data.get("summary_hi") or "").strip(),
+            "summary_loc": str(data.get("summary_loc") or "").strip(),
         }
 
-    def fallback_understand(self, description: str) -> dict:
+    def fallback_understand(self, description: str, language: str = "en") -> dict:
         sector = _detect_sector(description)
         tags = _extract_tags(description)
         stage = _detect_stage(description)
@@ -360,18 +364,19 @@ class UnderstandingService:
             "support_needs": needs,
             "summary_en": summary_en,
             "summary_hi": summary_hi,
+            "summary_loc": summary_en if language not in ("en", "hi") else "",
         }
 
-    def understand(self, description: str) -> dict:
+    def understand(self, description: str, language: str = "en") -> dict:
         if self.gemini_enabled:
-            parsed = self._parse_llm(self._call_gemini(self._llm_prompt(description)), description)
+            parsed = self._parse_llm(self._call_gemini(self._llm_prompt(description, language)), description)
             if parsed:
                 return {**parsed, "provider": "gemini"}
         if self.anthropic_enabled:
-            parsed = self._parse_llm(self._call_anthropic(self._llm_prompt(description)), description)
+            parsed = self._parse_llm(self._call_anthropic(self._llm_prompt(description, language)), description)
             if parsed:
                 return {**parsed, "provider": "anthropic"}
-        return {**self.fallback_understand(description), "provider": "builtin"}
+        return {**self.fallback_understand(description, language), "provider": "builtin"}
 
 
 understanding_service = UnderstandingService()

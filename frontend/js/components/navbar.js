@@ -36,7 +36,8 @@
         '<div class="navbar-actions">' +
         '<button class="icon-btn" id="themeToggle" aria-label="Toggle theme">' + (Theme.current() === "dark" ? "☀️" : "🌙") + "</button>" +
         '<select id="langSelect" class="no-print" style="width:auto" aria-label="Language">' +
-        '<option value="en">English</option><option value="hi">हिंदी</option></select>' +
+        I18n.optionsHtml() +
+        "</select>" +
         authLinks +
         "</div></div>";
 

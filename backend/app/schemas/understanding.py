@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class UnderstandRequest(BaseModel):
     description: str = ""
+    language: str = "en"
 
 
 class UnderstandResponse(BaseModel):
@@ -14,6 +15,7 @@ class UnderstandResponse(BaseModel):
     support_needs: List[str] = []
     summary_en: str = ""
     summary_hi: str = ""
+    summary_loc: str = ""
     provider: str = "builtin"
 
 
@@ -25,6 +27,7 @@ class ConfirmUnderstandingRequest(BaseModel):
     support_needs: List[str] = []
     summary_en: str = ""
     summary_hi: str = ""
+    language: str = "en"
 
 
 class ApplyFromDescriptionRequest(BaseModel):
@@ -34,3 +37,4 @@ class ApplyFromDescriptionRequest(BaseModel):
     annual_family_income: str | None = None
     education_status: str | None = None
     estimated_project_cost: int | None = None
+    language: str = "en"

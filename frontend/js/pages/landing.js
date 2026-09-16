@@ -14,7 +14,7 @@
       { n: "65+", key: "landing.stats.schemes" },
       { n: "14", key: "landing.stats.sectors" },
       { n: "29", key: "landing.stats.states" },
-      { n: "2", key: "landing.stats.languages" }
+      { n: "23", key: "landing.stats.languages" }
     ];
     var grid = document.querySelectorAll("[data-stat-grid]");
     grid.forEach(function (g) {
