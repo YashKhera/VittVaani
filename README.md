@@ -40,7 +40,12 @@ rates 6.5-8%).
   stage and support needs, then a 2-tap category/state pick completes the
   profile automatically) **or** "answer a step-by-step form". Users who find
   forms hard never have to touch one.
-- **Bilingual UI** — English ↔ Hindi toggle, persisted per user.
+- **Multilingual UI** — 23 Indian languages (English, Hindi, 11 full packs +
+  10 regional core packs with English fallback), grouped dropdown in the top
+  navbar, persisted per user. Packs include Assamese, Bengali, Bodo, Dogri,
+  Gujarati, Hindi, Kannada, Kashmiri, Konkani, Maithili, Malayalam, Manipuri
+  (Bengali script), Marathi, Nepali, Odia, Punjabi, Sanskrit, Santali
+  (Devanagari), Sindhi (Arabic), Tamil, Telugu and Urdu (RTL).
 - **Dark mode** — OS-preference aware and persisted.
 - **Saved schemes** — bookmark and revisit schemes anytime.
 
@@ -81,6 +86,10 @@ Arth Setu/
 │   ├── scheme-details.html   # scheme detail page
 │   ├── saved-schemes.html    # bookmarks
 │   ├── oauth/callback.html   # (optional) auth callback
+│   ├── js/i18n/lang/         # 23 language packs (JS modules, escaped UTF-8)
+│   │   ├── en/hi (in translations.js) + 11 major packs (252 keys each)
+│   │   └── 10 regional core packs (166 keys, English fallback for the rest):
+│   │       brx, doi, ks, kok, mai, mni, ne, sa, sat, sd
 │   ├── css/  js/  assets/
 │   └── serve.py              # static server → http://127.0.0.1:8080
 ├── 01-PRD.md  …  13-contributing.md   # design docs (see below)
