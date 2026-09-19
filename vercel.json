@@ -1,12 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api(.*)", "destination": "/api" },
-    { "source": "/api", "destination": "/api" },
-    { "source": "/docs", "destination": "/api" },
-    { "source": "/redoc", "destination": "/api" },
-    { "source": "/openapi.json", "destination": "/api" },
-    { "source": "/health", "destination": "/api" },
-    { "source": "/", "destination": "/frontend/index.html" },
-    { "source": "/:path*", "destination": "/frontend/:path*" }
-  ]
+    { "source": "/(.*)", "destination": "/api" }
+  ],
+  "cleanUrls": false
 }
