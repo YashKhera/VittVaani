@@ -1,6 +1,12 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
-  ],
-  "cleanUrls": false
+    { "source": "/", "destination": "/frontend/index.html" },
+    { "source": "/favicon.svg", "destination": "/frontend/favicon.svg" },
+    { "source": "/:file.html", "destination": "/frontend/:file.html" },
+    { "source": "/css/:path*", "destination": "/frontend/css/:path*" },
+    { "source": "/js/:path*", "destination": "/frontend/js/:path*" },
+    { "source": "/assets/:path*", "destination": "/frontend/assets/:path*" },
+    { "source": "/oauth/:path*", "destination": "/frontend/oauth/:path*" },
+    { "source": "/lang/:path*", "destination": "/frontend/lang/:path*" }
+  ]
 }
