@@ -1,0 +1,14 @@
+# Vercel ignores - local-only files never shipped to the deployment
+backend/.env
+**/.env
+**/__pycache__/
+**.py[cod]
+**/*.db
+**/*.sqlite*
+**/.venv/
+**/venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**.ruff_cache/
+backend/tests/
+backend/.venv/

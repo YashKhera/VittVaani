@@ -1,33 +1,32 @@
-# Python dependencies for VittVaani backend (Python 3.10+)
-# Frontend needs no packages — pure static HTML/CSS/JS.
+# Python dependencies for the VittVaani backend (Python 3.10+).
+# Installed by Vercel for the serverless function in api/index.py.
+# The frontend needs no packages - pure static HTML/CSS/JS.
 
 # --- Core web framework ---
-fastapi==0.104.0
-uvicorn[standard]==0.24.0
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
 
 # --- ORM + database ---
-SQLAlchemy==2.0.52
-psycopg2-binary==2.9.13
+sqlalchemy>=2.0,<3.0
+psycopg2-binary>=2.9,<3.0
 
 # --- Validation + configuration ---
-pydantic-settings==2.1.0
-email-validator==2.3.0
-python-dotenv==1.0.0
-python-multipart==0.0.6
+pydantic>=2.10,<3.0
+email-validator>=2.2,<3.0
+pydantic-settings>=2.6,<3.0
 
 # --- Authentication (JWT + password hashing) ---
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+python-jose[cryptography]>=3.3,<4.0
+bcrypt>=4.1,<6.0
 
-# --- AI service hooks (reserved - future AI assistant) ---
-anthropic==0.18.1
-huggingface_hub==1.31.0
-tokenizers==0.23.2
-hf-xet==1.6.0
+# --- HTTP forms + environment ---
+python-multipart>=0.0.9,<1.0
+python-dotenv>=1.0,<2.0
+
+# --- AI service hooks (reserved; Gemini REST + builtin fallback used) ---
+anthropic>=0.40,<1.0
+websockets>=12,<18
 
 # --- Testing ---
-pytest==7.4.3
-
-# --- Dev shortcuts ---
-# Backend server:  python run.py  |  uvicorn app.main:app --reload
-# Tests:          python -m unittest discover tests -v
+pytest>=8.0,<9.0
+httpx>=0.27,<1.0
