@@ -9,6 +9,8 @@ from app.utils.helpers import normalize_list
 
 EDUCATION_PURSUING = {"school", "diploma", "undergraduate", "postgraduate", "research"}
 
+PROJECT_TYPES = ("business", "education")
+
 STOPWORDS = {
     "a", "an", "the", "and", "or", "but", "if", "of", "in", "on", "at", "to", "for",
     "with", "from", "by", "my", "our", "your", "is", "are", "was", "were", "am", "be",
@@ -51,6 +53,31 @@ def _keywords(text: str) -> set:
 
 class AdvancedMatchingService:
     WEIGHTS = MATCH_WEIGHTS
+
+    @staticmethod
+    def project_type(profile: EntrepreneurProfile) -> str:
+        value = (getattr(profile, "project_type", None) or "").lower()
+        return value if value in PROJECT_TYPES else "business"
+
+    def ideal_loan_category(self, profile: EntrepreneurProfile) -> Optional[str]:
+        """The loan tier that best fits the user's project size / type."""
+        if self.project_type(profile) == "education":
+            return "education"
+        cost = getattr(profile, "estimated_project_cost", None)
+        if cost:
+            if cost <= 140000:
+                return "micro_finance"
+            if cost <= 5000000:
+                return "term_loan"
+        return None
+
+    def match_tier(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
+        if not scheme.loan_category:
+            return 0
+        ideal = self.ideal_loan_category(profile)
+        if ideal and scheme.loan_category == ideal:
+            return self.WEIGHTS.get("tier", 8)
+        return 0
 
     def _sectors(self, scheme: Scheme) -> list[str]:
         return [s.lower() for s in normalize_list(scheme.sectors)]
@@ -164,6 +191,7 @@ class AdvancedMatchingService:
             "entrepreneur_type_match": "entrepreneur category",
             "description_match": "business description",
             "targeted_match": "targeted concessional scheme",
+            "tier_match": "loan tier (project size / type)",
         }
         return [labels[k] for k, v in breakdown.items() if v and k in labels]
 
@@ -201,8 +229,10 @@ class AdvancedMatchingService:
 
         if scheme.loan_category == "education":
             edu = (profile.education_status or "").lower()
-            sector = (profile.business_sector or "").lower()
-            if edu not in EDUCATION_PURSUING and sector != "education":
+            if (
+                edu not in EDUCATION_PURSUING
+                and self.project_type(profile) != "education"
+            ):
                 return False, "This is an education loan for students pursuing higher education or studies"
         return True, None
 
@@ -241,6 +271,7 @@ class AdvancedMatchingService:
             "entrepreneur_type_match": self.match_entrepreneur_type(profile, scheme),
             "description_match": self.match_description(profile, scheme),
             "targeted_match": self.match_targeted(profile, scheme),
+            "tier_match": self.match_tier(profile, scheme),
         }
         total = sum(breakdown.values())
         if total >= 90:
@@ -348,6 +379,9 @@ class RecommendationService:
                 "state": profile.state,
                 "business_stage": profile.business_stage,
                 "annual_revenue": profile.annual_revenue,
+                "project_type": AdvancedMatchingService.project_type(profile),
+                "estimated_project_cost": profile.estimated_project_cost,
+                "ideal_loan_category": AdvancedMatchingService().ideal_loan_category(profile),
                 "support_needs": [r.support_type for r in profile.requirements],
                 "language": language,
             },

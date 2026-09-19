@@ -8,6 +8,12 @@
   var matching = { savedIds: AppStore.getSavedIds() || [] };
   var filterTimer;
 
+  function esc(s) {
+    return String(s === undefined || s === null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
   function loadSaved() {
     if (!Auth.isLoggedIn() || !Auth.token()) return Promise.resolve([]);
     return API.get("/api/saved-schemes", Auth.token(), { skipAuthRedirect: true })
@@ -52,10 +58,20 @@
     var summary = document.getElementById("resultsSummary");
     if (summary) {
       summary.classList.remove("hidden");
+      var ps = match.profile_summary || {};
+      var pills = "";
+      if (ps.project_type) {
+        pills += '<span class="tag-chip">' + I18n.t("profile.projectType") + ": " + esc(I18n.t("projectType." + ps.project_type) || ps.project_type) + "</span>";
+      }
+      if (ps.ideal_loan_category) {
+        pills += '<span class="tag-chip tag-chip-sector">' + I18n.t("profile.bestLoanFit") + ": " + esc(I18n.t("loanCategory." + ps.ideal_loan_category) || ps.ideal_loan_category) + "</span>";
+      }
       summary.innerHTML =
         '<div class="text-center mb-5">' +
         '<h2>' + I18n.t("results.title") + "</h2>" +
-        '<p class="text-muted">' + I18n.t("results.sub") + "</p></div>";
+        '<p class="text-muted">' + I18n.t("results.sub") + "</p>" +
+        (pills ? '<p class="mt-3">' + pills + "</p>" : "") +
+        "</div>";
     }
 
     var mount2 = document.getElementById("resultsMount");

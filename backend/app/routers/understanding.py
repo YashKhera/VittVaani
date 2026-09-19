@@ -9,6 +9,7 @@ from app.models.user import User
 from app.schemas.understanding import (
     ApplyFromDescriptionRequest,
     ConfirmUnderstandingRequest,
+    UnderstandFormRequest,
     UnderstandRequest,
     UnderstandResponse,
 )
@@ -45,10 +46,27 @@ def understand(payload: UnderstandRequest, current_user: User = Depends(get_curr
         tags=result.get("tags") or [],
         stage=result.get("stage"),
         support_needs=result.get("support_needs") or [],
+        project_type=result.get("project_type"),
         summary_en=result.get("summary_en") or "",
         summary_hi=result.get("summary_hi") or "",
         summary_loc=result.get("summary_loc") or "",
         provider=result.get("provider") or "builtin",
+    )
+
+
+@router.post("/understand-form", response_model=UnderstandResponse)
+def understand_form(payload: UnderstandFormRequest, current_user: User = Depends(get_current_user)):
+    result = understanding_service.understand_form(payload.model_dump(), payload.language or "en")
+    return UnderstandResponse(
+        sector=result.get("sector"),
+        tags=result.get("tags") or [],
+        stage=result.get("stage"),
+        support_needs=result.get("support_needs") or [],
+        project_type=result.get("project_type"),
+        summary_en=result.get("summary_en") or "",
+        summary_hi=result.get("summary_hi") or "",
+        summary_loc=result.get("summary_loc") or "",
+        provider="builtin",
     )
 
 
@@ -65,6 +83,10 @@ def confirm_understanding(
     profile.ai_summary_en = payload.summary_en
     profile.ai_summary_hi = payload.summary_hi
     profile.ai_confirmed = True
+    if payload.project_type:
+        profile.project_type = payload.project_type
+    elif not profile.project_type:
+        profile.project_type = "business"
     if payload.stage and not profile.business_stage:
         profile.business_stage = payload.stage
     _sync_requirements(db, profile, payload.support_needs)
@@ -74,6 +96,7 @@ def confirm_understanding(
         tags=profile.ai_tags or [],
         stage=profile.business_stage,
         support_needs=_requirement_types(db, profile),
+        project_type=profile.project_type,
         summary_en=profile.ai_summary_en or "",
         summary_hi=profile.ai_summary_hi or "",
         summary_loc="",
@@ -92,6 +115,7 @@ def get_understanding(
         tags=profile.ai_tags or [],
         stage=profile.business_stage,
         support_needs=_requirement_types(db, profile),
+        project_type=profile.project_type,
         summary_en=profile.ai_summary_en or "",
         summary_hi=profile.ai_summary_hi or "",
         provider=understanding_service.provider,
@@ -111,6 +135,7 @@ def apply_from_description(
     needs = result.get("support_needs") or []
     summary_en = result.get("summary_en") or ""
     summary_hi = result.get("summary_hi") or ""
+    project_type = payload.project_type or result.get("project_type") or "business"
 
     profile = db.query(EntrepreneurProfile).filter(EntrepreneurProfile.user_id == current_user.id).first()
     if not profile:
@@ -124,6 +149,7 @@ def apply_from_description(
             annual_family_income=payload.annual_family_income or "",
             education_status=payload.education_status or "not_applicable",
             estimated_project_cost=payload.estimated_project_cost,
+            project_type=project_type,
             business_sector=ai_sector or "all",
             business_stage=stage or "new",
             description=payload.description,
@@ -142,6 +168,8 @@ def apply_from_description(
             profile.education_status = payload.education_status
         if payload.estimated_project_cost is not None:
             profile.estimated_project_cost = payload.estimated_project_cost
+        if project_type:
+            profile.project_type = project_type
         if ai_sector and not profile.business_sector:
             profile.business_sector = ai_sector
         if stage and not profile.business_stage:
@@ -161,6 +189,7 @@ def apply_from_description(
         tags=profile.ai_tags or [],
         stage=profile.business_stage,
         support_needs=_requirement_types(db, profile),
+        project_type=profile.project_type,
         summary_en=profile.ai_summary_en or "",
         summary_hi=profile.ai_summary_hi or "",
         summary_loc=result.get("summary_loc") or "",

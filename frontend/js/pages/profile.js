@@ -37,6 +37,7 @@
       age_group: document.getElementById("age_group").value,
       gender: document.getElementById("gender").value,
       social_category: document.getElementById("social_category").value,
+      project_type: document.getElementById("project_type").value,
       annual_family_income: document.getElementById("annual_family_income").value,
       education_status: document.getElementById("education_status").value,
       estimated_project_cost: document.getElementById("estimated_project_cost").value === ""
@@ -53,7 +54,7 @@
   function apply(p) {
     var map = {
       full_name: "full_name", phone_number: "phone_number", state: "state", district: "district",
-      age_group: "age_group", gender: "gender", social_category: "social_category",
+      age_group: "age_group", gender: "gender", social_category: "social_category", project_type: "project_type",
       annual_family_income: "annual_family_income", education_status: "education_status",
       estimated_project_cost: "estimated_project_cost",
       business_name: "business_name", business_sector: "business_sector",
@@ -99,7 +100,6 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      var btn = document.querySelector('#profileForm button[type="submit"]');
       var btn = document.querySelector('#profileForm button[type="submit"]');
       btn.disabled = true;
       btn.textContent = I18n.t("common.loading");

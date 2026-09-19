@@ -2,6 +2,7 @@ import unittest
 
 from app.services.gemini_client import is_live_model
 from app.services.understanding_service import (
+    _detect_project_type,
     _detect_sector,
     _detect_stage,
     _detect_support_needs,
@@ -92,6 +93,55 @@ class TestSupportNeedsDetection(unittest.TestCase):
     def test_empty(self):
         self.assertEqual(_detect_support_needs(""), [])
         self.assertEqual(_detect_support_needs(None), [])
+
+
+class TestProjectTypeDetection(unittest.TestCase):
+    def test_self_study_intent_is_education(self):
+        cases = [
+            "I want an education loan to study further",
+            "loan for my college degree",
+            "I am studying BSc nursing and need fees help",
+            "want admission in university, need money for fees",
+            "padhai ke liye loan chahiye",
+        ]
+        for desc in cases:
+            self.assertEqual(_detect_project_type(desc), "education", desc)
+
+    def test_business_default(self):
+        cases = [
+            "I make pickles and namkeen in my small kitchen",
+            "I run a dairy selling milk and ghee",
+            "I want to start a bakery business",
+            "I sell sarees and apparel online",
+        ]
+        for desc in cases:
+            self.assertEqual(_detect_project_type(desc), "business", desc)
+
+    def test_teaching_centre_is_business_not_education(self):
+        cases = [
+            "I run a coaching centre for students",
+            "planning to open tuition classes",
+            "I want to start a training institute",
+            "I teach computer classes in my village",
+        ]
+        for desc in cases:
+            self.assertEqual(_detect_project_type(desc), "business", desc)
+
+    def test_empty_and_none(self):
+        self.assertIsNone(_detect_project_type(""))
+        self.assertIsNone(_detect_project_type(None))
+
+
+class TestFallbackUnderstandProjectType(unittest.TestCase):
+    def test_fallback_returns_project_type(self):
+        out = fallback_understand("I want a loan to study nursing in college")
+        self.assertEqual(out["project_type"], "education")
+        out2 = fallback_understand("I run a coaching centre near my school")
+        self.assertEqual(out2["project_type"], "business")
+
+    def test_empty_description_returns_none_project_type(self):
+        out = fallback_understand("")
+        self.assertIsNone(out["project_type"])
 
 
 class TestFallbackUnderstand(unittest.TestCase):

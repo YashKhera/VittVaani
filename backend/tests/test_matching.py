@@ -16,6 +16,7 @@ def make_profile(**kwargs):
         annual_family_income=None,
         education_status=None,
         estimated_project_cost=None,
+        project_type=None,
     )
     defaults.update(kwargs)
     return SimpleNamespace(**defaults, requirements=[])
@@ -241,6 +242,86 @@ class TestAdvancedMatching(unittest.TestCase):
         order_ker = [r["scheme"].name for r in self.matcher.rank_recommendations(with_req("kerala"), [national, local])]
         self.assertEqual(order_mah, ["StateSpecific", "National"])
         self.assertEqual(order_ker, ["National", "StateSpecific"])
+
+
+class TestProjectCostTiering(unittest.TestCase):
+    def setUp(self):
+        self.matcher = AdvancedMatchingService()
+
+    def test_ideal_loan_category_by_cost(self):
+        micro = make_profile(gender="male", social_category="sc", estimated_project_cost=100000)
+        term = make_profile(gender="male", social_category="sc", estimated_project_cost=300000)
+        large = make_profile(gender="male", social_category="sc", estimated_project_cost=6000000)
+        unknown = make_profile(gender="male", social_category="sc")
+        self.assertEqual(self.matcher.ideal_loan_category(micro), "micro_finance")
+        self.assertEqual(self.matcher.ideal_loan_category(term), "term_loan")
+        self.assertIsNone(self.matcher.ideal_loan_category(large))
+        self.assertIsNone(self.matcher.ideal_loan_category(unknown))
+
+    def test_education_project_type_maps_to_education_loan(self):
+        profile = make_profile(project_type="education", estimated_project_cost=300000)
+        self.assertEqual(self.matcher.ideal_loan_category(profile), "education")
+
+    def test_project_type_defaults_to_business(self):
+        self.assertEqual(self.matcher.project_type(make_profile(project_type="education")), "education")
+        self.assertEqual(self.matcher.project_type(make_profile()), "business")
+
+    def test_tier_match_boosts_correct_loan_category(self):
+        micro_scheme = make_scheme(loan_category="micro_finance", entrepreneur_types=["sc", "general"])
+        term_scheme = make_scheme(loan_category="term_loan", entrepreneur_types=["sc", "general"])
+        edu_scheme = make_scheme(loan_category="education", entrepreneur_types=["sc", "general"])
+
+        small_biz = make_profile(gender="male", social_category="sc", estimated_project_cost=100000)
+        self.assertEqual(self.matcher.match_tier(small_biz, micro_scheme), 8)
+        self.assertEqual(self.matcher.match_tier(small_biz, term_scheme), 0)
+
+        large_biz = make_profile(gender="male", social_category="sc", estimated_project_cost=300000)
+        self.assertEqual(self.matcher.match_tier(large_biz, micro_scheme), 0)
+        self.assertEqual(self.matcher.match_tier(large_biz, term_scheme), 8)
+
+        student = make_profile(gender="male", social_category="sc", project_type="education",
+                               education_status="undergraduate", business_sector="education")
+        self.assertEqual(self.matcher.match_tier(student, edu_scheme), 8)
+        self.assertEqual(self.matcher.match_tier(student, micro_scheme), 0)
+
+    def test_no_tier_boost_for_schemes_without_loan_category(self):
+        profile = make_profile(estimated_project_cost=100000)
+        scheme = make_scheme(loan_category=None)
+        self.assertEqual(self.matcher.match_tier(profile, scheme), 0)
+
+    def test_breakdown_includes_tier_match(self):
+        profile = make_profile(gender="male", social_category="sc", estimated_project_cost=100000)
+        profile.requirements = [SimpleNamespace(support_type="loan")]
+        micro_scheme = make_scheme(loan_category="micro_finance", entrepreneur_types=["sc", "general"])
+        match = self.matcher.calculate_match(profile, micro_scheme)
+        self.assertEqual(match["breakdown"]["tier_match"], 8)
+        self.assertIn("loan tier (project size / type)", match["matched_criteria"])
+
+    def test_rank_recommendations_puts_aligned_tier_first(self):
+        profile = make_profile(gender="male", social_category="sc", business_sector="food_processing",
+                               state="maharashtra", business_stage="existing", estimated_project_cost=100000)
+        profile.requirements = [SimpleNamespace(support_type="loan")]
+        micro_scheme = make_scheme(name="Micro", loan_category="micro_finance", sectors=["all"],
+                                   states=["all"], business_stages=["existing"], entrepreneur_types=["sc", "general"])
+        term_scheme = make_scheme(name="Term", loan_category="term_loan", sectors=["all"],
+                                  states=["all"], business_stages=["existing"], entrepreneur_types=["sc", "general"])
+        ranked = self.matcher.rank_recommendations(profile, [micro_scheme, term_scheme])
+        self.assertEqual(ranked[0]["scheme"].name, "Micro")
+        self.assertGreater(ranked[0]["match_score"], ranked[1]["match_score"])
+
+    def test_education_gate_allows_project_type_education(self):
+        profile = make_profile(gender="male", social_category="sc", project_type="education",
+                               education_status="not_applicable", business_sector="handicrafts")
+        scheme = make_scheme(loan_category="education", entrepreneur_types=["sc", "general"])
+        eligible, reason = self.matcher.hard_eligibility(profile, scheme)
+        self.assertTrue(eligible, reason)
+
+    def test_education_gate_blocks_tuition_business(self):
+        profile = make_profile(gender="male", social_category="sc", project_type="business",
+                               education_status="not_applicable", business_sector="education")
+        scheme = make_scheme(loan_category="education", entrepreneur_types=["sc", "general"])
+        eligible, _ = self.matcher.hard_eligibility(profile, scheme)
+        self.assertFalse(eligible)
 
 
 if __name__ == "__main__":

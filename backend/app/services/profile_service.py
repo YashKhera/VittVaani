@@ -33,6 +33,7 @@ class ProfileService:
             annual_family_income=payload.annual_family_income,
             education_status=payload.education_status,
             estimated_project_cost=payload.estimated_project_cost,
+            project_type=payload.project_type,
             business_name=payload.business_name,
             business_sector=payload.business_sector,
             business_stage=payload.business_stage,

@@ -5,6 +5,7 @@ from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.schemas.profile import ProfileCreateRequest, ProfileResponse, ProfileUpdateRequest
+from app.services.matching_service import AdvancedMatchingService
 from app.services.profile_service import ProfileService
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -24,6 +25,8 @@ def _to_response(profile) -> ProfileResponse:
         annual_family_income=profile.annual_family_income or "",
         education_status=profile.education_status or "not_applicable",
         estimated_project_cost=profile.estimated_project_cost,
+        project_type=profile.project_type or "business",
+        ideal_loan_category=AdvancedMatchingService().ideal_loan_category(profile),
         business_name=profile.business_name or "",
         business_sector=profile.business_sector or "",
         business_stage=profile.business_stage or "",

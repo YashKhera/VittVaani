@@ -78,6 +78,30 @@ SECTOR_KEYWORDS = {
 STAGE_VALUES = ["new", "existing"]
 SUPPORT_NEED_VALUES = ["capital", "subsidy", "training", "marketing", "legal", "tech"]
 
+PROJECT_TYPE_VALUES = ["business", "education"]
+
+# "education" = the owner (or their family) is pursuing studies and needs
+# finance for it. Any description without clear study intent defaults to
+# business — that includes people who run/plan teaching & coaching centres.
+PROJECT_TYPE_STRONG_EDUCATION = [
+    "loan to study", "study loan", "to study", "studying", "for my study",
+    "for my studies", "further study", "further studies", "higher education",
+    "my education", "education for", "college", "university", "degree",
+    "admission", "exam", "upsc", "neet", "jee", "mbbs", "nursing course",
+    "bsc", "masters", "postgraduate", "phd", "school fees", "college fees",
+    "course fees", "padhai", "parhai", "study karna", "study karni",
+]
+PROJECT_TYPE_EDUCATION_KEYWORDS = (
+    PROJECT_TYPE_STRONG_EDUCATION
+    + ["study", "education", "fees for", "student", "diploma"]
+)
+PROJECT_TYPE_BUSINESS_KEYWORDS = [
+    "i run", "i am running", "coaching", "tuition", "classes", "teaching",
+    "i teach", "institute", "academy", "training for", "my school",
+    "our school", "centre", "center", "training centre", "coaching centre",
+    "tuition centre", "i sell", "i make", "my shop",
+]
+
 STAGE_LABELS_EN = {"new": "business is just starting", "existing": "business is already running"}
 STAGE_LABELS_HI = {"new": "व्यवसाय अभी शुरू हो रहा है", "existing": "व्यवसाय पहले से चल रहा है"}
 
@@ -88,6 +112,24 @@ SUPPORT_NEED_LABELS_EN = {
     "marketing": "marketing & market access",
     "legal": "registration & compliance",
     "tech": "technology & digitization",
+}
+
+SUPPORT_NEED_LABELS_HI = {
+    "capital": "ऋण / स्टार्टअप पूँजी",
+    "subsidy": "सब्सिडी / अनुदान",
+    "training": "प्रशिक्षण और कौशल",
+    "marketing": "मार्केटिंग और बाज़ार",
+    "legal": "पंजीकरण और अनुपालन",
+    "tech": "तकनीक और डिजिटलीकरण",
+}
+
+STAGE_LABEL_TO_VALUE = {
+    **{v: k for k, v in STAGE_LABELS_EN.items()},
+    **{v: k for k, v in STAGE_LABELS_HI.items()},
+}
+SUPPORT_NEED_LABEL_TO_VALUE = {
+    **{v: k for k, v in SUPPORT_NEED_LABELS_EN.items()},
+    **{v: k for k, v in SUPPORT_NEED_LABELS_HI.items()},
 }
 
 STAGE_EXISTING_KEYWORDS = [
@@ -221,6 +263,21 @@ def _detect_stage_safely(description: str) -> str | None:
     return _detect_stage(description)
 
 
+def _detect_project_type(description: str) -> str | None:
+    if not description:
+        return None
+    text = description.lower()
+    edu_hit = any(kw in text for kw in PROJECT_TYPE_EDUCATION_KEYWORDS)
+    biz_hit = any(kw in text for kw in PROJECT_TYPE_BUSINESS_KEYWORDS)
+    if edu_hit and not biz_hit:
+        return "education"
+    if edu_hit and biz_hit:
+        if any(kw in text for kw in PROJECT_TYPE_STRONG_EDUCATION):
+            return "education"
+        return "business"
+    return "business"
+
+
 class UnderstandingService:
     def __init__(self):
         self.gemini_enabled = bool(settings.GEMINI_API_KEY)
@@ -262,6 +319,10 @@ class UnderstandingService:
             "business is already running. Use 'null' if unclear.\n\n"
             f"Support needs (pick ALL that apply from): {', '.join(SUPPORT_NEED_VALUES)}. "
             "Use an empty array if none are mentioned.\n\n"
+            f"project_type (pick one from): {', '.join(PROJECT_TYPE_VALUES)}. "
+            "'education' only for someone pursuing their own (or a family member's) studies and "
+            "asking for study finance; 'business' for any enterprise the person runs or plans — "
+            "including teaching/coaching/tuition centres. Use 'business' if unclear.\n\n"
             "Business description (raw user text):\n" + (description or "(empty)") + "\n\n"
             "Return ONLY valid JSON with exactly these keys:\n"
             '{'
@@ -269,6 +330,7 @@ class UnderstandingService:
             '"tags": ["up to 5 short topic tags in English like: bakery, catering"], '
             '"stage": "one stage value or null", '
             '"support_needs": ["all applicable need values or empty array"], '
+            '"project_type": "one project_type value", '
             '"summary_en": "1-2 simple sentences explaining, in plain words, what the user means their '
             'business is about and what kind of help they might need", '
             '"summary_hi": "same explanation translated into simple Hinglish/Hindi", '
@@ -309,11 +371,15 @@ class UnderstandingService:
         if not isinstance(needs, list):
             needs = _detect_support_needs(description)
         needs = [str(n).strip().lower() for n in needs if str(n).strip().lower() in SUPPORT_NEED_VALUES]
+        project_type = data.get("project_type")
+        if project_type not in PROJECT_TYPE_VALUES:
+            project_type = _detect_project_type(description)
         return {
             "sector": sector,
             "tags": tags,
             "stage": stage,
             "support_needs": needs,
+            "project_type": project_type,
             "summary_en": str(data.get("summary_en") or "").strip(),
             "summary_hi": str(data.get("summary_hi") or "").strip(),
             "summary_loc": str(data.get("summary_loc") or "").strip(),
@@ -362,6 +428,7 @@ class UnderstandingService:
             "tags": tags,
             "stage": stage,
             "support_needs": needs,
+            "project_type": _detect_project_type(description),
             "summary_en": summary_en,
             "summary_hi": summary_hi,
             "summary_loc": summary_en if language not in ("en", "hi") else "",
@@ -377,6 +444,77 @@ class UnderstandingService:
             if parsed:
                 return {**parsed, "provider": "anthropic"}
         return {**self.fallback_understand(description, language), "provider": "builtin"}
+
+    def understand_form(self, data: dict, language: str = "en") -> dict:
+        """Build an understanding from explicit questionnaire answers.
+
+        The options the user picked are the source of truth. The optional free-text
+        description only fills gaps (sector/stage/support needs/project type when the
+        user did not pick them) and enriches the summary — it is never required.
+        """
+        sector = (data.get("sector") or "").strip() or None
+        stage_raw = (data.get("stage") or data.get("business_stage") or "").strip() or None
+        stage = stage_raw if stage_raw in STAGE_VALUES else STAGE_LABEL_TO_VALUE.get(stage_raw)
+        raw_needs = data.get("support_needs") or []
+        needs = []
+        for n in raw_needs:
+            if n in SUPPORT_NEED_VALUES:
+                needs.append(n)
+            elif n in SUPPORT_NEED_LABEL_TO_VALUE:
+                needs.append(SUPPORT_NEED_LABEL_TO_VALUE[n])
+        project_type = (data.get("project_type") or "").strip() or None
+        description = (data.get("description") or "").strip()
+
+        if sector not in SECTOR_VALUES and sector != "all":
+            sector = None
+        if stage not in STAGE_VALUES:
+            stage = None
+        if project_type not in PROJECT_TYPE_VALUES:
+            project_type = None
+        if not sector:
+            sector = _detect_sector(description)
+        if not stage:
+            stage = _detect_stage(description)
+        if not needs:
+            needs = _detect_support_needs(description)
+        if not project_type:
+            project_type = _detect_project_type(description) or "business"
+
+        tags = _extract_tags(description)
+
+        sector_en = SECTOR_LABELS_EN.get(sector, sector.replace("_", " ") if sector else "your venture")
+        sector_hi = SECTOR_LABELS_HI.get(sector, sector.replace("_", " ") if sector else "आपका उद्यम")
+        stage_en = STAGE_LABELS_EN.get(stage, "")
+        stage_hi = STAGE_LABELS_HI.get(stage, "")
+
+        summary_en = f"Your venture is in {sector_en}" if sector else "Your venture profile is saved"
+        summary_hi = f"आपका उद्यम {sector_hi} क्षेत्र में है" if sector else "आपकी उद्यम प्रोफ़ाइल सहेजी गई है"
+        if stage_en:
+            summary_en += f" and your {stage_en}."
+            summary_hi += f" — आपका व्यवसाय {stage_hi}।"
+        else:
+            summary_en += "."
+            summary_hi += "।"
+        if needs:
+            need_en = ", ".join(SUPPORT_NEED_LABELS_EN[n] for n in needs)
+            need_hi = ", ".join(SUPPORT_NEED_LABELS_HI.get(n, SUPPORT_NEED_LABELS_EN[n]) for n in needs)
+            summary_en += f" You asked for help with: {need_en}."
+            summary_hi += f" आपने मदद के लिए चुना: {need_hi}।"
+        if description:
+            snippet = description.splitlines()[0].strip()[:90]
+            summary_en += f" You also told us: “{snippet}”."
+            summary_hi += f" आपने यह भी बताया: “{snippet}”।"
+
+        return {
+            "sector": sector,
+            "tags": tags,
+            "stage": stage,
+            "support_needs": needs,
+            "project_type": project_type,
+            "summary_en": summary_en,
+            "summary_hi": summary_hi,
+            "summary_loc": summary_en if language not in ("en", "hi") else "",
+        }
 
 
 understanding_service = UnderstandingService()

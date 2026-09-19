@@ -22,6 +22,7 @@
         '<div><h3 class="mb-1">' + this._esc(title) + "</h3>" +
         '<div class="scheme-meta">' +
         '<span class="badge badge-info">' + this._esc(body.sector || "all") + "</span>" +
+        (body.loan_category ? '<span class="badge badge-success">' + this._esc(I18n.t("loanCategory." + body.loan_category) || body.loan_category) + "</span>" : "") +
         '<span>' + this._esc(body.location_type || "") + "</span>" +
         (body.state ? "<span>" + this._esc(body.state) + "</span>" : "") +
         "</div></div>" +
@@ -31,10 +32,13 @@
         '<div class="text-sm text-muted">' + I18n.t("results.score.label") + "</div></div>" +
         "</div></div>";
 
-      if (item.reasons && item.reasons.length) {
+      if (item.matched_criteria && item.matched_criteria.length) {
         html += '<div class="mt-3">' +
           '<h4 class="text-sm mb-2">' + I18n.t("results.breakdown.title") + "</h4>" +
-          item.reasons.map(function (r) { return '<div class="breakdown-item text-sm"><span>' + this._esc(r.label) + "</span><strong>" + Math.round(r.score) + "/" + this._esc(String(r.max)) + "</strong></div>"; }.bind(this)).join("") +
+          '<div>' + item.matched_criteria.map(function (c) { return '<span class="tag-chip">' + this._esc(c) + "</span>"; }.bind(this)).join("") + "</div>" +
+          (item.match_breakdown && item.match_breakdown.tier_match > 0
+            ? '<p class="text-sm mt-2 mb-0"><strong>' + I18n.t("results.tier.match") + " ✓</strong></p>"
+            : "") +
           "</div>";
       }
 

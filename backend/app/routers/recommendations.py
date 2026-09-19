@@ -37,6 +37,8 @@ def _serialize(item: dict, language: str, explanation: str) -> RecommendationIte
             stage_match=item["match_breakdown"]["stage_match"],
             entrepreneur_type_match=item["match_breakdown"]["entrepreneur_type_match"],
             description_match=item["match_breakdown"].get("description_match", 0),
+            targeted_match=item["match_breakdown"].get("targeted_match", 0),
+            tier_match=item["match_breakdown"].get("tier_match", 0),
             total_score=item["match_score"],
         ),
         possible_gap=item["possible_gap"],

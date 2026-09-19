@@ -217,7 +217,7 @@
         id: "understand",
         type: "understand",
         title: { en: "Here is what I understood about your business", hi: "मैंने आपके व्यवसाय के बारे में यह समझा" },
-        help: { en: "I read your description. Confirm if this is right, so I can match you with the best schemes.", hi: "मैंने आपका विवरण पढ़ा। सही होने पर पुष्टि करें, ताकि मैं आपको सबसे उपयुक्त योजनाएँ चुन सकूँ।" }
+        help: { en: "Based on your answers. Confirm if this is right, so I can match you with the best schemes.", hi: "आपके उत्तरों के आधार पर। सही होने पर पुष्टि करें, ताकि मैं आपको सबसे उपयुक्त योजनाएँ चुन सकूँ।" }
       },
       {
         id: "review",

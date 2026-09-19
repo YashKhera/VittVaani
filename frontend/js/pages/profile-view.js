@@ -16,6 +16,12 @@
     return html + "</div></div>";
   }
 
+  function optLabel(list, value) {
+    if (!Array.isArray(list) || !value) return value || "";
+    var o = list.filter(function (x) { return x.value === value; })[0];
+    return o ? I18n.loc(o) : value;
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     if (!Auth.requireLogin()) return;
     var mount = document.getElementById("profileContent");
@@ -33,6 +39,11 @@
           { l: I18n.t("profile.age"), v: p.age_group, k: "age_group" },
           { l: I18n.t("profile.gender"), v: p.gender, k: "gender" },
           { l: I18n.t("profile.category"), v: p.social_category, k: "social_category" },
+          { l: I18n.t("profile.projectType"), v: p.project_type ? (I18n.t("projectType." + p.project_type) || p.project_type) : "", k: "project_type" },
+          { l: I18n.t("profile.familyIncome"), v: optLabel(Questions.familyIncomeGroups, p.annual_family_income), k: "annual_family_income" },
+          { l: I18n.t("profile.educationStatus"), v: optLabel(Questions.educationStatuses, p.education_status), k: "education_status" },
+          { l: I18n.t("profile.projectCost"), v: p.estimated_project_cost !== null && p.estimated_project_cost !== undefined ? "₹" + Number(p.estimated_project_cost).toLocaleString("en-IN") : "", k: "estimated_project_cost" },
+          { l: I18n.t("profile.bestLoanFit"), v: p.ideal_loan_category ? (I18n.t("loanCategory." + p.ideal_loan_category) || p.ideal_loan_category) : "", k: "best_loan_fit" },
           { l: I18n.t("profile.annualRevenue"), v: p.annual_revenue, k: "annual_revenue" },
           { l: "Employees", v: p.employee_count, k: "employee_count" },
           { l: I18n.t("profile.description"), v: p.description, k: "description" }

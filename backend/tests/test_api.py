@@ -293,6 +293,87 @@ class TestUnderstanding(ApiTestCase):
         moved = [sid for sid in food_scores if food_scores[sid] > baseline.get(sid, 0)]
         self.assertTrue(moved, "confirming a food sector should lift at least one food scheme")
 
+    def test_understand_returns_project_type(self):
+        token = self._setup()
+        r = self.client.post("/api/ai/understand", json={
+            "description": "I run a coaching centre for students"
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["project_type"], "business")
+        r2 = self.client.post("/api/ai/understand", json={
+            "description": "I want an education loan to study in college"
+        }, headers=self._headers(token))
+        self.assertEqual(r2.json()["project_type"], "education")
+
+    def test_confirm_persists_project_type(self):
+        token = self._setup()
+        r = self.client.post("/api/ai/confirm", json={
+            "description": "I want to study nursing",
+            "sector": "education",
+            "tags": ["nursing"],
+            "project_type": "education",
+            "summary_en": "Study loan",
+            "summary_hi": "शिक्षा ऋण",
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        saved = self.client.get("/api/ai/understanding", headers=self._headers(token)).json()
+        self.assertEqual(saved["project_type"], "education")
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["project_type"], "education")
+
+
+class TestUnderstandFromForm(ApiTestCase):
+    def test_answers_drive_understanding_without_description(self):
+        token = self._token()
+        r = self.client.post("/api/ai/understand-form", json={
+            "sector": "food_processing",
+            "stage": "existing",
+            "support_needs": ["capital", "marketing"],
+            "annual_revenue": "under_5l",
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["sector"], "food_processing")
+        self.assertEqual(data["stage"], "existing")
+        self.assertEqual(data["support_needs"], ["capital", "marketing"])
+        self.assertEqual(data["project_type"], "business")
+        self.assertTrue(data["summary_en"])
+        self.assertIn("food processing", data["summary_en"])
+
+    def test_description_enriches_but_options_win(self):
+        token = self._token()
+        r = self.client.post("/api/ai/understand-form", json={
+            "sector": "agriculture",
+            "stage": "new",
+            "support_needs": ["subsidy"],
+            "description": "I make pickles and namkeen at home and want to start selling",
+        }, headers=self._headers(token))
+        data = r.json()
+        self.assertEqual(data["sector"], "agriculture")
+        self.assertEqual(data["stage"], "new")
+        self.assertEqual(data["support_needs"], ["subsidy"])
+        self.assertIn("pickle", data["tags"])
+        self.assertIn("You also told us", data["summary_en"])
+
+    def test_empty_payload_returns_business_default(self):
+        token = self._token()
+        r = self.client.post("/api/ai/understand-form", json={}, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["project_type"], "business")
+        self.assertIsNone(data["sector"])
+        self.assertTrue(data["summary_en"])
+
+    def test_explicit_project_type_education_respected_without_description(self):
+        token = self._token()
+        r = self.client.post("/api/ai/understand-form", json={
+            "sector": "education",
+            "project_type": "education",
+        }, headers=self._headers(token))
+        data = r.json()
+        self.assertEqual(data["project_type"], "education")
+        self.assertEqual(data["sector"], "education")
+
 
 class TestApplyFromDescription(ApiTestCase):
     def test_creates_minimal_profile_without_form(self):
@@ -403,6 +484,134 @@ class TestApplyFromDescription(ApiTestCase):
         saved = self.client.get("/api/ai/understanding", headers=self._headers(token)).json()
         self.assertEqual(saved["stage"], "existing")
         self.assertIn("capital", saved["support_needs"])
+
+
+class TestProjectTypeApi(ApiTestCase):
+    def test_apply_detects_education_project_type(self):
+        token = self._token()
+        r = self.client.post("/api/ai/apply-from-description", json={
+            "description": "I want an education loan to study in college",
+            "social_category": "sc",
+            "state": "punjab",
+        }, headers=self._headers(token))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["project_type"], "education")
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["project_type"], "education")
+        self.assertEqual(prof["business_sector"], "education")
+
+    def test_apply_detects_business_project_type(self):
+        token = self._token()
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "I run a coaching centre for students",
+            "social_category": "sc",
+            "state": "punjab",
+        }, headers=self._headers(token))
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["project_type"], "business")
+
+    def test_apply_explicit_project_type_override_wins(self):
+        token = self._token()
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "I run a coaching centre for students",
+            "social_category": "sc",
+            "state": "punjab",
+            "project_type": "education",
+        }, headers=self._headers(token))
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["project_type"], "education")
+
+    def test_education_apply_gets_education_loan(self):
+        token = self._token()
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "I want an education loan to study in college",
+            "social_category": "sc",
+            "state": "punjab",
+            "annual_family_income": "under_2.5l",
+        }, headers=self._headers(token))
+        data = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()
+        self.assertEqual(data["profile_summary"]["project_type"], "education")
+        cats = {x["scheme"].get("loan_category") for x in data["recommendations"]}
+        self.assertIn("education", cats)
+
+    def test_education_loan_blocked_for_teaching_business_even_in_education_sector(self):
+        token = self._token()
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "I run a coaching centre for students",
+            "social_category": "sc",
+            "state": "punjab",
+            "annual_family_income": "under_2.5l",
+        }, headers=self._headers(token))
+        data = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()
+        cats = {x["scheme"].get("loan_category") for x in data["recommendations"]}
+        self.assertNotIn("education", cats)
+
+    def test_small_business_tier_boosts_micro_over_term_loan(self):
+        token = self._token()
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "I make utensils in my small workshop and want a loan for a machine",
+            "social_category": "sc",
+            "state": "punjab",
+            "annual_family_income": "under_2.5l",
+            "estimated_project_cost": 100000,
+        }, headers=self._headers(token))
+        recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
+        micro = [x for x in recs if x["scheme"].get("loan_category") == "micro_finance"]
+        term = [x for x in recs if x["scheme"].get("loan_category") == "term_loan"]
+        self.assertTrue(micro, "micro_finance scheme should appear for a small project")
+        self.assertTrue(term, "term_loan scheme should appear for a small project")
+        self.assertEqual(micro[0]["match_breakdown"]["tier_match"], 8)
+        self.assertEqual(term[0]["match_breakdown"]["tier_match"], 0)
+        self.assertLess(recs.index(micro[0]), recs.index(term[0]))
+
+    def test_profile_endpoints_expose_project_type(self):
+        token = self._token()
+        self.client.post("/api/profile", json={
+            "full_name": "Ravi Kumar",
+            "phone_number": "9876500111",
+            "state": "punjab",
+            "social_category": "sc",
+            "annual_family_income": "under_2.5l",
+            "education_status": "undergraduate",
+            "estimated_project_cost": 300000,
+            "project_type": "education",
+            "business_name": "Ravi Study",
+            "business_sector": "education",
+            "business_stage": "planning",
+            "support_needs": ["loan"],
+        }, headers=self._headers(token))
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["project_type"], "education")
+        up = self.client.put("/api/profile", json={"project_type": "business"}, headers=self._headers(token)).json()
+        self.assertEqual(up["project_type"], "business")
+
+    def test_profile_endpoints_expose_ideal_loan_category(self):
+        token = self._token()
+        self.client.post("/api/profile", json={
+            "full_name": "Ravi Kumar",
+            "phone_number": "9876500112",
+            "state": "punjab",
+            "social_category": "sc",
+            "annual_family_income": "under_2.5l",
+            "estimated_project_cost": 100000,
+            "business_name": "Ravi Workshop",
+            "business_sector": "all",
+            "business_stage": "existing",
+        }, headers=self._headers(token))
+        prof = self.client.get("/api/profile", headers=self._headers(token)).json()
+        self.assertEqual(prof["ideal_loan_category"], "micro_finance")
+
+    def test_profile_summary_exposes_ideal_loan_category(self):
+        token = self._token()
+        self.client.post("/api/ai/apply-from-description", json={
+            "description": "I want an education loan to study in college",
+            "social_category": "sc",
+            "state": "punjab",
+            "annual_family_income": "under_2.5l",
+        }, headers=self._headers(token))
+        data = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()
+        self.assertEqual(data["profile_summary"]["project_type"], "education")
+        self.assertEqual(data["profile_summary"]["ideal_loan_category"], "education")
 
 
 class TestChannelFinance(ApiTestCase):

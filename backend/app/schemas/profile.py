@@ -14,6 +14,7 @@ class ProfileCreateRequest(BaseModel):
     annual_family_income: str = ""
     education_status: str = "not_applicable"
     estimated_project_cost: int | None = None
+    project_type: str = "business"
     business_name: str = ""
     business_sector: str
     business_stage: str = "existing"
@@ -34,6 +35,7 @@ class ProfileUpdateRequest(BaseModel):
     annual_family_income: str | None = None
     education_status: str | None = None
     estimated_project_cost: int | None = None
+    project_type: str | None = None
     business_name: str | None = None
     business_sector: str | None = None
     business_stage: str | None = None
@@ -61,6 +63,8 @@ class ProfileResponse(BaseModel):
     annual_family_income: str = ""
     education_status: str = "not_applicable"
     estimated_project_cost: int | None = None
+    project_type: str = "business"
+    ideal_loan_category: str | None = None
     business_name: str
     business_sector: str
     business_stage: str

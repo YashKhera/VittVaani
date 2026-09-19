@@ -287,6 +287,7 @@
 
     var chips = "";
     if (sector) chips += '<span class="tag-chip tag-chip-sector">' + escapeHtml(sector) + "</span>";
+    if (u.project_type) chips += '<span class="tag-chip tag-chip-project-type">' + escapeHtml(I18n.t("projectType." + u.project_type) || u.project_type) + "</span>";
     if (stageKey) chips += '<span class="tag-chip tag-chip-stage">' + (stageKey === "new"
       ? I18n.loc({ hi: "अभी शुरू हो रहा है", en: "New venture", pa: "ਨਵਾਂ ਉੱਦਮ" })
       : I18n.loc({ hi: "पहले से चल रहा है", en: "Already running", pa: "ਪਹਿਲਾਂ ਤੋਂ ਚੱਲ ਰਿਹਾ" })) + "</span>";
@@ -406,6 +407,7 @@
     mount.innerHTML = '<div class="question-card text-center py-4"><div class="spinner"></div>' +
       '<p class="mt-3 text-muted">' + I18n.t("questionnaire.describe.applying") + "</p></div>";
     var payload = { description: describeText, language: I18n.current() };
+    if (u.project_type) payload.project_type = u.project_type;
     if (category) payload.social_category = category;
     if (state) payload.state = state;
     if (category === "sc") {
@@ -599,6 +601,7 @@
       body +
       '<div class="question-actions">' +
       (step > 0 ? '<button class="btn btn-secondary" id="prevBtn">' + I18n.t("common.previous") + "</button>" : '<a class="btn btn-secondary" href="index.html">' + I18n.t("common.cancel") + "</a>") +
+      (q.type === "textarea" ? '<button class="btn btn-ghost" id="skipTextBtn">' + I18n.t("common.skip") + "</button>" : "") +
       '<button class="btn ' + (q.type === "review" ? "btn-primary btn-lg" : "btn-primary") + '" id="nextBtn">' + (q.type === "review" ? I18n.t("questionnaire.finish") : I18n.t("common.next")) + "</button>" +
       "</div></div>";
 
@@ -607,6 +610,13 @@
     document.getElementById("nextBtn").addEventListener("click", onNext);
     var prev = document.getElementById("prevBtn");
     if (prev) prev.addEventListener("click", function () { step--; scrollTop(); render(); });
+    var skipText = document.getElementById("skipTextBtn");
+    if (skipText) skipText.addEventListener("click", function () {
+      answers[q.id] = "";
+      var inputEl = document.getElementById("q-input");
+      if (inputEl) inputEl.value = "";
+      onNext();
+    });
 
     if (q.type === "understand") {
       renderUnderstand(q);
@@ -674,38 +684,76 @@
     return I18n.summary(u);
   }
 
+  function understandNeeds() {
+    return [].concat(answers.financial || []).concat(answers.non_financial || []);
+  }
+
+  // The understanding is driven by the marked answers; the free-text description
+  // is optional and only enriches it. This payload always carries the options the
+  // user actually selected so the backend never depends on a description.
+  function understandFormPayload(desc) {
+    function pick(k) {
+      var v = answers[k];
+      if (v === undefined || v === null || v === "") v = profile ? profile[k] : null;
+      return v;
+    }
+    var cost = answers.estimated_project_cost;
+    if ((cost === undefined || cost === null || cost === "") && profile) cost = profile.estimated_project_cost;
+    return {
+      sector: pick("business_sector") || null,
+      stage: pick("business_stage") || null,
+      support_needs: understandNeeds(),
+      project_type: pick("project_type") || null,
+      annual_revenue: pick("annual_revenue") || null,
+      estimated_project_cost: (cost === undefined || cost === null || cost === "") ? null : cost,
+      description: desc || null,
+      language: I18n.current()
+    };
+  }
+
+  // Signature of the answers that produced an understanding, so a saved/draft
+  // result is only reused while its inputs are unchanged.
+  function understandFormKey(desc) {
+    return [
+      answers.business_sector,
+      answers.business_stage,
+      answers.project_type,
+      answers.annual_revenue,
+      answers.estimated_project_cost,
+      understandNeeds().join(","),
+      desc || ""
+    ].join("|");
+  }
+
+  function draftMatches(savedOrDraft, desc) {
+    if (!savedOrDraft || !savedOrDraft.summary_en) return false;
+    if (savedOrDraft.bootKey !== undefined) return savedOrDraft.bootKey === understandFormKey(desc);
+    return savedOrDraft.description === desc;
+  }
+
   function renderUnderstand(q) {
     var mount = document.getElementById("understandingMount");
     if (!mount) return;
+    var desc = answers.description || "";
     var saved = answers.understand || null;
-    if (saved && saved.understand_confirmed === true && saved.summary_en && saved.description === (answers.description || "")) {
+    if (saved && saved.understand_confirmed === true && draftMatches(saved, desc)) {
       renderUnderstandingResult(mount, saved, true);
       return;
     }
-    var desc = answers.description || "";
-    if (!desc) {
-      mount.innerHTML =
-        '<div class="understanding-tip">' +
-        '<p class="text-muted mb-3">' + I18n.t("questionnaire.understand.noDescription") + "</p>" +
-        '<textarea id="understandText" rows="4" placeholder="' + I18n.t("questionnaire.understand.editPlaceholder") + '"></textarea>' +
-        '<div class="question-actions" style="margin-top:var(--space-3);justify-content:flex-start">' +
-        '<button class="btn btn-primary" id="understandReBtn">' + I18n.t("questionnaire.understand.reunderstand") + "</button>" +
-        "</div></div>";
-      document.getElementById("understandReBtn").addEventListener("click", reunderstand);
-      return;
-    }
     var draft = answers._understandDraft || null;
-    if (draft && draft.summary_en && draft.description === desc) {
+    if (draft && draftMatches(draft, desc)) {
       renderUnderstandingResult(mount, draft, false);
       return;
     }
     mount.innerHTML = '<div class="text-center py-4"><div class="spinner"></div><p class="mt-3 text-muted">' + I18n.t("questionnaire.understand.think") + "</p></div>";
-    API.post("/api/ai/understand", { description: desc, language: I18n.current() }, Auth.token())
+    API.post("/api/ai/understand-form", understandFormPayload(desc), Auth.token())
       .then(function (u) {
         answers._understandDraft = {
           description: desc,
+          bootKey: understandFormKey(desc),
           sector: u.sector,
           tags: u.tags || [],
+          project_type: u.project_type || null,
           summary_en: u.summary_en || "",
           summary_hi: u.summary_hi || "",
           summary_loc: u.summary_loc || ""
@@ -734,6 +782,10 @@
     if (sector) {
       html += '<p class="understanding-row"><span class="understanding-label">' + I18n.t("questionnaire.understand.sector") + "</span> <strong>" + escapeHtml(sector) + "</strong></p>";
     }
+    if (u.project_type) {
+      html += '<p class="understanding-row"><span class="understanding-label">' + I18n.t("profile.projectType") + "</span> <strong>" +
+        escapeHtml(I18n.t("projectType." + u.project_type) || u.project_type) + "</strong></p>";
+    }
     if (tags.length) {
       html += '<p class="understanding-row"><span class="understanding-label">' + I18n.t("questionnaire.understand.tags") + "</span> " +
         tags.map(function (t) { return '<span class="tag-chip">' + escapeHtml(t) + "</span>"; }).join(" ") + "</p>";
@@ -741,6 +793,7 @@
     html += '<div class="question-actions" style="margin-top:var(--space-4);justify-content:flex-start">' +
       '<button class="btn btn-primary" id="understandYesBtn">' + I18n.t("questionnaire.understand.yes") + "</button>" +
       '<button class="btn btn-secondary" id="understandNoBtn">' + I18n.t("questionnaire.understand.no") + "</button>" +
+      '<button class="btn btn-ghost" id="understandSkipBtn">' + I18n.t("common.skip") + "</button>" +
       "</div>" +
       '<div class="under-edit hidden" id="understandingEdit">' +
       '<p class="text-sm text-muted mb-2">' + I18n.t("questionnaire.understand.edit") + "</p>" +
@@ -753,6 +806,7 @@
     mount.innerHTML = html;
 
     document.getElementById("understandYesBtn").addEventListener("click", function () { confirmUnderstanding(u); });
+    document.getElementById("understandSkipBtn").addEventListener("click", function () { confirmUnderstanding(u); });
     var noBtn = document.getElementById("understandNoBtn");
     noBtn.addEventListener("click", function () {
       document.getElementById("understandingEdit").classList.remove("hidden");
@@ -767,10 +821,14 @@
   function confirmUnderstanding(u) {
     if (!Auth.token()) return;
     var desc = answers.description || "";
+    var bootKey = understandFormKey(desc);
     API.post("/api/ai/confirm", {
-      description: desc,
+      description: desc || null,
       sector: u.sector || null,
       tags: u.tags || [],
+      stage: u.stage || null,
+      support_needs: u.support_needs || [],
+      project_type: u.project_type || null,
       summary_en: u.summary_en || "",
       summary_hi: u.summary_hi || ""
     }, Auth.token())
@@ -778,11 +836,16 @@
         answers.understand = {
           understand_confirmed: true,
           description: desc,
+          bootKey: bootKey,
           sector: res.sector,
           tags: res.tags || u.tags || [],
+          stage: res.stage || u.stage || null,
+          support_needs: res.support_needs || u.support_needs || [],
+          project_type: (res && res.project_type) || u.project_type || null,
           summary_en: res.summary_en,
           summary_hi: res.summary_hi
         };
+        answers.project_type = answers.understand.project_type || answers.project_type;
         answers._understandDraft = null;
         persist();
         renderHeader();
@@ -799,10 +862,6 @@
   function reunderstand() {
     var ta = document.getElementById("understandText");
     var text = ta ? ta.value.trim() : "";
-    if (!text) {
-      Notify.warning(I18n.t("common.required"));
-      return;
-    }
     answers.description = text;
     answers.understand = null;
     answers._understandDraft = null;
@@ -810,12 +869,16 @@
     var mount = document.getElementById("understandingMount");
     if (!mount) return;
     mount.innerHTML = '<div class="text-center py-4"><div class="spinner"></div><p class="mt-3 text-muted">' + I18n.t("questionnaire.understand.think") + "</p></div>";
-    API.post("/api/ai/understand", { description: text, language: I18n.current() }, Auth.token())
+    var desc = answers.description || "";
+    var bootKey = understandFormKey(desc);
+    API.post("/api/ai/understand-form", understandFormPayload(desc), Auth.token())
       .then(function (u) {
         answers._understandDraft = {
-          description: text,
+          description: desc,
+          bootKey: bootKey,
           sector: u.sector,
           tags: u.tags || [],
+          project_type: u.project_type || null,
           summary_en: u.summary_en || "",
           summary_hi: u.summary_hi || "",
           summary_loc: u.summary_loc || ""
@@ -955,6 +1018,7 @@
       annual_family_income: answers.annual_family_income || "",
       education_status: answers.education_status || "not_applicable",
       estimated_project_cost: projCost,
+      project_type: answers.project_type || (profile && profile.project_type) || "business",
       sector: answers.business_sector,
       business_sector: answers.business_sector,
       state: answers.state,

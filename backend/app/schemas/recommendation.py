@@ -12,6 +12,8 @@ class MatchBreakdown(BaseModel):
     stage_match: int = 0
     entrepreneur_type_match: int = 0
     description_match: int = 0
+    targeted_match: int = 0
+    tier_match: int = 0
     total_score: int = 0
 
 

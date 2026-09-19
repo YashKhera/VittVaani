@@ -46,6 +46,10 @@ SOCIAL_CATEGORIES = ["general", "obc", "sc", "st", "minority"]
 
 LOAN_CATEGORIES = ["micro_finance", "term_loan", "education"]
 
+# Whether the user is seeking finance for their own studies ("education")
+# or for an enterprise of any kind ("business", default).
+PROJECT_TYPES = ["business", "education"]
+
 # Annual family income bands -> income value in INR used to compare with
 # scheme income ceilings. "above_5l" maps to a sentinel huge value so any
 # realistic ceiling disqualifies the applicant.
@@ -78,6 +82,7 @@ MATCH_WEIGHTS = {
     "stage": 10,
     "entrepreneur_type": 10,
     "description": 10,
+    "tier": 8,
     "registration": 5,
     "experience": 5,
 }
