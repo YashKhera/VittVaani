@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Log in - VittVaani</title>
+  <script>
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('vittvaani:theme'));
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/typography.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/accessibility.css">
+  <link rel="stylesheet" href="css/print.css">
+  <style>
+    .auth-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-5) var(--space-4);
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 440px;
+    }
+    .auth-brand {
+      display: block;
+      text-align: center;
+      font-size: var(--font-size-lg);
+      font-weight: 700;
+      margin-bottom: var(--space-4);
+      color: var(--text-primary);
+    }
+    .auth-brand:hover { text-decoration: none; }
+    .auth-header { text-align: center; margin-bottom: var(--space-5); }
+    .auth-sub { color: var(--text-secondary); margin-bottom: 0; }
+  </style>
+</head>
+<body data-page="login">
+  <div class="auth-container">
+    <div class="auth-card">
+      <a href="index.html" class="auth-brand"><span class="gradient-text" data-i18n="app.name">VittVaani</span></a>
+      <div class="card fade-in-up">
+        <div class="auth-header">
+          <h2 class="mb-1" data-i18n="auth.login.title">Welcome back</h2>
+          <p class="auth-sub" data-i18n="auth.login.sub">Log in to continue your matching journey</p>
+        </div>
+
+        <div id="formError" class="form-error hidden"></div>
+
+        <form id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="email" data-i18n="auth.email">Email address</label>
+            <input type="email" id="email" name="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+          </div>
+
+          <div class="form-group">
+            <div class="flex items-center justify-between">
+              <label for="password" data-i18n="auth.password">Password</label>
+              <a href="reset-password.html" class="text-sm" data-i18n="auth.forgot">Forgot password?</a>
+            </div>
+            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block mb-3" data-i18n="auth.login.btn">Log in</button>
+        </form>
+
+        <p class="text-center mb-0">
+          <span data-i18n="auth.login.footer">Don't have an account?</span>
+          <a href="register.html" data-i18n="nav.register">Sign up</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/services/storage.js"></script>
+  <script src="js/services/theme.js"></script>
+  <script src="js/i18n/translations.js"></script>
+  <script src="js/services/i18n.js"></script>
+  <script src="js/services/notifications.js"></script>
+  <script src="js/services/validation.js"></script>
+  <script src="js/data/questions.js"></script>
+  <script src="js/data/schemes.js"></script>
+  <script src="js/services/matching.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/components/navbar.js"></script>
+  <script src="js/components/footer.js"></script>
+  <script src="js/components/progress-ring.js"></script>
+  <script src="js/components/scheme-card.js"></script>
+  <script src="js/components/match-badge.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/pages/login.js"></script>
+</body>
+</html>

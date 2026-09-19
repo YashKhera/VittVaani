@@ -1,0 +1,10 @@
+@media print {
+  body { background: #fff; color: #000; }
+  .navbar, .toast-container, .no-print { display: none !important; }
+  a { color: #000; text-decoration: underline; }
+  .card, .scheme-card { box-shadow: none; border: 1px solid #ccc; border-radius: 0; break-inside: avoid; }
+  .btn { box-shadow: none; color: #000 !important; background: #eee !important; }
+  h1 { font-size: 1.6rem; }
+  main { padding-top: 0; }
+  .sidebar-card { position: static; }
+}

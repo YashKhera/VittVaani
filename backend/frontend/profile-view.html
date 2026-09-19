@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>My Profile - VittVaani</title>
+  <script>
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('vittvaani:theme'));
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/typography.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/accessibility.css">
+  <link rel="stylesheet" href="css/print.css">
+  <style>
+    .profile-page { max-width: 760px; margin: 0 auto; }
+    .profile-actions { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; margin-bottom: var(--space-5); }
+    .completeness-bar {
+      height: 10px;
+      background: var(--bg-tertiary);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: var(--space-2) 0;
+    }
+    .completeness-fill {
+      height: 100%;
+      background: var(--primary-gradient);
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+    .detail-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-4);
+    }
+    .detail-card h2 {
+      font-size: var(--font-size-lg);
+      padding-bottom: var(--space-2);
+      border-bottom: 2px solid var(--border);
+      margin-bottom: var(--space-4);
+    }
+  </style>
+</head>
+<body data-page="profile-view">
+  <a href="#profileContent" class="skip-link">Skip to profile</a>
+  <header id="navbar" class="navbar"></header>
+
+  <main class="container profile-page">
+    <div class="results-header">
+      <h1 class="mb-2" data-i18n="profile.view.title">Your profile</h1>
+      <p class="text-muted mb-0">Review your entrepreneur profile</p>
+    </div>
+
+    <div class="profile-actions">
+      <a href="profile.html" class="btn btn-primary" data-i18n="profile.update">Edit profile</a>
+      <a href="questionnaire.html" class="btn btn-secondary" data-i18n="questionnaire.start">Start</a>
+      <a href="saved-schemes.html" class="btn btn-secondary" data-i18n="nav.saved">Saved Schemes</a>
+    </div>
+
+    <div id="profileContent">
+      <div class="text-center text-muted" data-i18n="common.loading">Loading...</div>
+    </div>
+  </main>
+
+  <div id="siteFooter"></div>
+
+  <script src="js/services/storage.js"></script>
+  <script src="js/services/theme.js"></script>
+  <script src="js/i18n/translations.js"></script>
+  <script src="js/services/i18n.js"></script>
+  <script src="js/services/notifications.js"></script>
+  <script src="js/services/validation.js"></script>
+  <script src="js/data/questions.js"></script>
+  <script src="js/data/schemes.js"></script>
+  <script src="js/services/matching.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/components/navbar.js"></script>
+  <script src="js/components/footer.js"></script>
+  <script src="js/components/progress-ring.js"></script>
+  <script src="js/components/scheme-card.js"></script>
+  <script src="js/components/match-badge.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/pages/profile-view.js"></script>
+
+</body>
+</html>

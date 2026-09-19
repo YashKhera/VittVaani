@@ -45,9 +45,10 @@ _api_app.router.routes = [
     if not (isinstance(r, APIRoute) and r.path == "/")
 ]
 
-_frontend = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
-if os.path.isdir(_frontend):
-    _api_app.mount("/", app=StaticFiles(directory=_frontend, html=True), name="static")
+_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_candidates = [d for d in (os.path.join(_root, "backend", "frontend"), os.path.join(_root, "frontend")) if os.path.isdir(d)]
+if _candidates:
+    _api_app.mount("/", app=StaticFiles(directory=_candidates[0], html=True), name="static")
 
 
 class _DiagApp:
@@ -70,6 +71,7 @@ class _DiagApp:
                     "root_path": scope.get("root_path"),
                     "method": scope.get("method"),
                     "host": (headers.get(b"host", b"") or b"").decode(),
+                    "ls_root": os.listdir(_root)[:40],
                 }).encode()
                 await send({
                     "type": "http.response.start",

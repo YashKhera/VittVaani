@@ -1,0 +1,18 @@
+[data-theme="dark"] .hero-title .gradient-text,
+[data-theme="dark"] .stat-number { background-image: var(--primary-gradient); }
+
+[data-theme="dark"] .step-number { background-image: var(--primary-gradient); }
+
+[data-theme="dark"] .navbar-inner { border-color: var(--border); }
+
+.theme-toggle-invert img {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; }
+  :root:not([data-theme="light"]) body {
+    background: #0f1117;
+    color: #e6edf3;
+  }
+}

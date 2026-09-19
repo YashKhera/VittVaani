@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Signing In - VittVaani</title>
+  <script>
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('vittvaani:theme'));
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/typography.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/animations.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/themes.css">
+  <link rel="stylesheet" href="../css/accessibility.css">
+  <link rel="stylesheet" href="../css/print.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .oauth-card { width: 100%; max-width: 420px; text-align: center; padding: var(--space-6); }
+    .spinner { margin: 0 auto; }
+  </style>
+</head>
+<body data-page="oauth">
+  <div class="card oauth-card fade-in-up">
+    <h2 class="mb-2">Signing you in</h2>
+    <p class="text-muted mb-4" data-i18n="common.loading">Loading...</p>
+    <div class="spinner"></div>
+    <div id="oauthMessage" class="mt-4 hidden">
+      <p class="text-muted mb-4">We could not complete the sign-in. Please try logging in again.</p>
+      <a class="btn btn-primary" href="../login.html">Back to Login</a>
+    </div>
+  </div>
+
+  <script src="../js/services/storage.js"></script>
+  <script src="../js/services/theme.js"></script>
+  <script src="../js/i18n/translations.js"></script>
+  <script src="../js/services/i18n.js"></script>
+  <script src="../js/services/notifications.js"></script>
+  <script src="../js/services/validation.js"></script>
+  <script src="../js/data/questions.js"></script>
+  <script src="../js/data/schemes.js"></script>
+  <script src="../js/services/matching.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/components/navbar.js"></script>
+  <script src="../js/components/footer.js"></script>
+  <script src="../js/components/progress-ring.js"></script>
+  <script src="../js/components/scheme-card.js"></script>
+  <script src="../js/components/match-badge.js"></script>
+  <script src="../js/components/modal.js"></script>
+  <script src="../js/pages/oauth-callback.js"></script>
+
+</body>
+</html>
