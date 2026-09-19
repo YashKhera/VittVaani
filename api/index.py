@@ -1,9 +1,12 @@
 """Vercel serverless entrypoint for the VittVaani FastAPI backend.
 
-No catch-all rewrite is used: Vercel routes `/api` and its subpaths to this
-function natively, so `scope["path"]` keeps the original `/api/...` form and the
-FastAPI routers (registered under `/api`) match directly. Static assets in
-`frontend/` are served by Vercel as files via the rewrites in `vercel.json`.
+Routing model (verified against the live deployment):
+- Vercel routes `/api` and its subpaths to this function natively and
+  preserves the original path (`scope["path"] == "/api/..."`), so the FastAPI
+  routers registered under `/api` match directly. No prefix stripping needed.
+- Any path that is NOT a route (``, `/login.html`, `/css/*`, ...) ALSO falls
+  through to this function with the original path intact, so the frontend is
+  served here via ``StaticFiles`` mounted at ``/`` with ``html=True``.
 
 `VERCEL=1` triggers the production bootstrap: `app.main` creates the tables on
 import, and the scheme catalog is seeded (idempotently) on the first cold start.
@@ -13,6 +16,9 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend"))
+
+from fastapi.routing import APIRoute  # noqa: E402
+from starlette.staticfiles import StaticFiles  # noqa: E402
 
 from app.main import app as _api_app  # noqa: E402  (import also runs create_all)
 from data.schemes_seed import seed_schemes  # noqa: E402
@@ -33,6 +39,15 @@ def _bootstrap_production_db():
 
 
 _bootstrap_production_db()
+
+_api_app.router.routes = [
+    r for r in _api_app.router.routes
+    if not (isinstance(r, APIRoute) and r.path == "/")
+]
+
+_frontend = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
+if os.path.isdir(_frontend):
+    _api_app.mount("/", app=StaticFiles(directory=_frontend, html=True), name="static")
 
 
 class _DiagApp:
