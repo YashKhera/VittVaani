@@ -6,7 +6,7 @@
     if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") {
       return "http://" + host + ":8001";
     }
-    return "/api";
+    return "";
   })();
 
   var API = {
