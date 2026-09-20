@@ -95,9 +95,14 @@ class AdvancedMatchingService:
         return [s.lower() for s in normalize_list(scheme.entrepreneur_types)]
 
     def match_sector(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
+        profile_pt = self.project_type(profile)
+        sectors = self._sectors(scheme)
+        if profile_pt == "education":
+            if "education" in sectors:
+                return self.WEIGHTS["sector"]
+            return 0
         if not profile.business_sector:
             return 0
-        sectors = self._sectors(scheme)
         if profile.business_sector.lower() in sectors:
             return self.WEIGHTS["sector"]
         if "all" in sectors:
@@ -122,6 +127,11 @@ class AdvancedMatchingService:
         return 0
 
     def match_stage(self, profile: EntrepreneurProfile, scheme: Scheme) -> int:
+        profile_pt = self.project_type(profile)
+        if profile_pt == "education":
+            if "planning" in self._stages(scheme):
+                return self.WEIGHTS["stage"]
+            return 0
         stage_map = {
             "idea": "planning",
             "new": "planning",
@@ -202,6 +212,30 @@ class AdvancedMatchingService:
 
     def hard_eligibility(self, profile: EntrepreneurProfile, scheme: Scheme) -> tuple[bool, Optional[str]]:
         """Return (eligible, reason). Reason is non-empty only when ineligible."""
+        profile_pt = self.project_type(profile)
+        scheme_states = self._states(scheme)
+        scheme_loan_cat = scheme.loan_category
+
+        # --- STATE hard filter ---
+        # If the scheme lists specific states (not "all"), the user MUST be in one of them.
+        if scheme_states and "all" not in scheme_states:
+            user_state = (profile.state or "").lower()
+            if user_state and user_state not in scheme_states:
+                return False, f"This scheme is only available in {', '.join(scheme_states)}"
+            # If user has no state set, we cannot confirm eligibility — still block
+            if not user_state:
+                return False, "Please set your state to check eligibility for state-specific schemes"
+
+        # --- PROJECT-TYPE hard filter ---
+        # Education schemes are ONLY for students pursuing studies
+        if scheme_loan_cat == "education":
+            if profile_pt != "education":
+                return False, "This scheme is for students pursuing education, not for business ventures"
+        else:
+            # Business schemes should NOT show for education-only students
+            if profile_pt == "education":
+                return False, "This scheme is for business ventures, not for students"
+
         scheme_types = self._types(scheme)
         if scheme_types and "general" not in scheme_types:
             user_types = self.extract_entrepreneur_types(profile)
@@ -210,28 +244,28 @@ class AdvancedMatchingService:
             if not any(t in scheme_types for t in user_types):
                 return False, "This scheme is reserved for a specific category, gender or age group that does not match your profile"
 
-        sc_scheme = bool(scheme.loan_category) and "sc" in self._types(scheme)
+        sc_scheme = bool(scheme_loan_cat) and "sc" in self._types(scheme)
         if sc_scheme and (profile.social_category or "").lower() != "sc":
             return False, "This concessional scheme is reserved for Scheduled Caste (SC) applicants"
 
         ceiling = scheme.income_ceiling
         income_value = self._family_income_value(profile)
         if ceiling and income_value is not None and income_value > ceiling:
-            return False, f"Annual family income exceeds the ₹{ceiling / 100000:.1f}L ceiling for this scheme"
+            return False, f"Annual family income exceeds the ceiling for this scheme"
 
         cost = profile.estimated_project_cost
         if cost:
-            cat_ceiling = LOAN_CATEGORY_COST_CEILING.get(scheme.loan_category) if scheme.loan_category else None
+            cat_ceiling = LOAN_CATEGORY_COST_CEILING.get(scheme_loan_cat) if scheme_loan_cat else None
             if cat_ceiling and cost > cat_ceiling:
                 return False, "Project cost exceeds this scheme's lending limit"
             if scheme.max_project_cost and cost > scheme.max_project_cost:
                 return False, "Project cost exceeds this scheme's funded-project limit"
 
-        if scheme.loan_category == "education":
+        if scheme_loan_cat == "education":
             edu = (profile.education_status or "").lower()
             if (
                 edu not in EDUCATION_PURSUING
-                and self.project_type(profile) != "education"
+                and profile_pt != "education"
             ):
                 return False, "This is an education loan for students pursuing higher education or studies"
         return True, None

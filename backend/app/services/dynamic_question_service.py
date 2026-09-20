@@ -45,8 +45,11 @@ def _matches(q: dict, profile) -> bool:
     if stages:
         if not profile.business_stage or _stage_set(profile.business_stage).isdisjoint(stages):
             return False
-    if q.get("education_required") and profile.education_status not in STUDENT_STATUSES:
-        return False
+    if q.get("education_required"):
+        edu = (profile.education_status or "").lower()
+        pt = (getattr(profile, "project_type", None) or "").lower()
+        if pt != "education" and edu not in STUDENT_STATUSES:
+            return False
     return True
 
 
@@ -65,23 +68,31 @@ def _bank_questions(profile, answered_ids: set) -> list[dict]:
                 added += 1
 
     selected: list[dict] = []
+    is_education = (getattr(profile, "project_type", None) or "").lower() == "education"
 
-    sector_list = SECTOR_QUESTIONS.get(profile.business_sector or "", [])
-    take(sector_list, MAX_SECTOR_QUESTIONS, selected)
-    edu_added = 0
-    for q in EDUCATION_QUESTIONS:
-        if edu_added >= MAX_EDUCATION_QUESTIONS or len(selected) >= MAX_TOTAL_QUESTIONS:
-            break
-        # The education sector already asks a "which course" question; don't
-        # repeat the same concept from the education-loan gating group.
-        if profile.business_sector == "education" and q["id"] == "ed_course_goal":
-            continue
-        if q["id"] in answered_ids:
-            continue
-        if _matches(q, profile):
+    if is_education:
+        for q in EDUCATION_QUESTIONS:
+            if len(selected) >= MAX_TOTAL_QUESTIONS:
+                break
+            if q["id"] in answered_ids:
+                continue
             selected.append(q)
-            edu_added += 1
-    take(COMMON_QUESTIONS, MAX_COMMON_QUESTIONS, selected)
+        take(COMMON_QUESTIONS, MAX_COMMON_QUESTIONS, selected)
+    else:
+        sector_list = SECTOR_QUESTIONS.get(profile.business_sector or "", [])
+        take(sector_list, MAX_SECTOR_QUESTIONS, selected)
+        edu_added = 0
+        for q in EDUCATION_QUESTIONS:
+            if edu_added >= MAX_EDUCATION_QUESTIONS or len(selected) >= MAX_TOTAL_QUESTIONS:
+                break
+            if profile.business_sector == "education" and q["id"] == "ed_course_goal":
+                continue
+            if q["id"] in answered_ids:
+                continue
+            if _matches(q, profile):
+                selected.append(q)
+                edu_added += 1
+        take(COMMON_QUESTIONS, MAX_COMMON_QUESTIONS, selected)
     return selected[:MAX_TOTAL_QUESTIONS]
 
 

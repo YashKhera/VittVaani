@@ -34,3 +34,4 @@ Thumbs.db
 # ---- Logs / misc ----
 *.log
 .DS_Store
+.vercel

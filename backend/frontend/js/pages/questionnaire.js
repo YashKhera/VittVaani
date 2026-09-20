@@ -452,18 +452,21 @@
 
   function buildSteps(dynamicQuestions) {
     steps = [];
+    var isEdu = profile && profile.project_type === "education";
     if (!profile) {
       var cat = Questions.find("entrepreneur_type");
       if (cat) steps.push(cat);
     }
     var dyn = dynamicQuestions || [];
     dyn.forEach(function (q) { steps.push(q); });
-    ["financial", "non_financial", "description"].forEach(function (id) {
-      if (POST_PROFILE_IDS[id]) {
-        var q = Questions.find(id);
-        if (q) steps.push(q);
-      }
-    });
+    if (!isEdu) {
+      ["financial", "non_financial", "description"].forEach(function (id) {
+        if (POST_PROFILE_IDS[id]) {
+          var q = Questions.find(id);
+          if (q) steps.push(q);
+        }
+      });
+    }
     if (!profileHasScFields()) {
       SC_IDS.forEach(function (id) {
         var q = Questions.find(id);

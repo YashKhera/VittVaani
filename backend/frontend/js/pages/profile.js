@@ -21,6 +21,11 @@
     return el && el.value === "sc";
   }
 
+  function isEducation() {
+    var el = document.getElementById("project_type");
+    return el && el.value === "education";
+  }
+
   function toggleScPanel() {
     var panel = document.getElementById("scPanel");
     if (!panel) return;
@@ -28,7 +33,31 @@
     panel.setAttribute("aria-hidden", isSc() ? "false" : "true");
   }
 
+  function toggleSections() {
+    var edu = isEducation();
+    var bizSection = document.getElementById("businessSection");
+    var eduSection = document.getElementById("educationSection");
+    if (bizSection) bizSection.style.display = edu ? "none" : "";
+    if (eduSection) eduSection.style.display = edu ? "" : "none";
+  }
+
   function collect() {
+    var edu = isEducation();
+    var income, eduStatus, projectCost;
+    if (edu) {
+      var e2 = document.getElementById("education_status2");
+      var i2 = document.getElementById("annual_family_income2");
+      var c2 = document.getElementById("estimated_project_cost2");
+      eduStatus = e2 ? e2.value : "";
+      income = i2 ? i2.value : "";
+      projectCost = c2 && c2.value !== "" ? Number(c2.value) : null;
+    } else {
+      income = document.getElementById("annual_family_income").value;
+      eduStatus = document.getElementById("education_status").value;
+      projectCost = document.getElementById("estimated_project_cost").value === ""
+        ? null
+        : Number(document.getElementById("estimated_project_cost").value);
+    }
     return {
       full_name: document.getElementById("full_name").value.trim(),
       phone_number: document.getElementById("phone_number").value.trim(),
@@ -38,16 +67,14 @@
       gender: document.getElementById("gender").value,
       social_category: document.getElementById("social_category").value,
       project_type: document.getElementById("project_type").value,
-      annual_family_income: document.getElementById("annual_family_income").value,
-      education_status: document.getElementById("education_status").value,
-      estimated_project_cost: document.getElementById("estimated_project_cost").value === ""
-        ? null
-        : Number(document.getElementById("estimated_project_cost").value),
-      business_name: document.getElementById("business_name").value.trim(),
-      business_sector: document.getElementById("business_sector").value,
-      business_stage: document.getElementById("business_stage").value,
-      annual_revenue: document.getElementById("annual_revenue").value,
-      employee_count: document.getElementById("employee_count").value.trim()
+      annual_family_income: income,
+      education_status: eduStatus,
+      estimated_project_cost: projectCost,
+      business_name: edu ? "" : document.getElementById("business_name").value.trim(),
+      business_sector: edu ? "education" : document.getElementById("business_sector").value,
+      business_stage: edu ? "planning" : document.getElementById("business_stage").value,
+      annual_revenue: edu ? "" : document.getElementById("annual_revenue").value,
+      employee_count: edu ? "" : document.getElementById("employee_count").value.trim()
     };
   }
 
@@ -64,6 +91,27 @@
       var el = document.getElementById(id);
       if (el && p[map[id]] !== undefined && p[map[id]] !== null) el.value = p[map[id]];
     });
+    if (isEducation()) {
+      var e2 = document.getElementById("education_status2");
+      var i2 = document.getElementById("annual_family_income2");
+      var c2 = document.getElementById("estimated_project_cost2");
+      if (e2) e2.value = p.education_status || "";
+      if (i2) i2.value = p.annual_family_income || "";
+      if (c2) c2.value = p.estimated_project_cost || "";
+    }
+  }
+
+  function syncEducationFields() {
+    var edu = isEducation();
+    var sc = isSc();
+    if (!edu && sc) {
+      var src = document.getElementById("education_status");
+      var dst = document.getElementById("education_status2");
+      var srcI = document.getElementById("annual_family_income");
+      var dstI = document.getElementById("annual_family_income2");
+      if (dst && src) dst.value = src.value;
+      if (dstI && srcI) dstI.value = srcI.value;
+    }
   }
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -74,6 +122,10 @@
     fillSelect("annual_revenue", (window.Questions && Questions.revenueGroups) || [], "");
     fillSelect("annual_family_income", (window.Questions && Questions.familyIncomeGroups) || [], "");
     fillSelect("education_status", (window.Questions && Questions.educationStatuses) || [], "");
+    fillSelect("education_status2", (window.Questions && Questions.educationStatuses) || [], "");
+    fillSelect("annual_family_income2", (window.Questions && Questions.familyIncomeGroups) || [], []);
+
+    toggleSections();
 
     API.get("/api/profile", Auth.token())
       .then(function (p) {
@@ -83,19 +135,29 @@
         fillSelect("annual_revenue", Questions.revenueGroups, p.annual_revenue);
         fillSelect("annual_family_income", Questions.familyIncomeGroups, p.annual_family_income);
         fillSelect("education_status", Questions.educationStatuses, p.education_status);
+        fillSelect("education_status2", Questions.educationStatuses, p.education_status);
+        fillSelect("annual_family_income2", Questions.familyIncomeGroups, p.annual_family_income);
         toggleScPanel();
+        toggleSections();
       })
       .catch(function () { /* no profile yet */ });
 
-    document.getElementById("social_category").addEventListener("change", toggleScPanel);
+    document.getElementById("social_category").addEventListener("change", function () {
+      toggleScPanel();
+      syncEducationFields();
+    });
+    document.getElementById("project_type").addEventListener("change", function () {
+      toggleSections();
+      syncEducationFields();
+    });
 
     document.getElementById("profileForm").addEventListener("submit", function (e) {
       e.preventDefault();
       var errorEl = document.getElementById("formError");
       errorEl.classList.add("hidden");
       var payload = collect();
-      if (isSc() && (!payload.annual_family_income || !payload.education_status || payload.estimated_project_cost === null)) {
-        errorEl.textContent = I18n.t("profile.sc.required");
+      if (!payload.state || payload.state === "") {
+        errorEl.textContent = I18n.t("profile.state") + " is required";
         errorEl.classList.remove("hidden");
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
