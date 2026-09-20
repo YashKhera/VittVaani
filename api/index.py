@@ -3,6 +3,11 @@ import os
 import sys
 import traceback
 
+# ── Fix Neon channel_binding on Vercel (causes transaction failures) ──────────
+_db_url = os.environ.get("DATABASE_URL", "")
+if "channel_binding=require" in _db_url and os.environ.get("VERCEL"):
+    os.environ["DATABASE_URL"] = _db_url.replace("&channel_binding=require", "").replace("?channel_binding=require", "")
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend"))
 
 from app.main import app as _api_app  # noqa: E402
