@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class SchemeListItem(BaseModel):
@@ -40,6 +40,16 @@ class SchemeDetail(SchemeListItem):
     benefits: List[str] = []
     eligibility: List[str] = []
     documents: List[str] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def _none_to_list(cls, data):
+        for field in ("benefits", "eligibility", "documents"):
+            if isinstance(data, dict) and data.get(field) is None:
+                data[field] = []
+            elif hasattr(data, field) and getattr(data, field) is None:
+                setattr(data, field, [])
+        return data
 
 
 class SchemeListResponse(BaseModel):
