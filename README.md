@@ -1,14 +1,18 @@
-# VittVaani — Scheme Analyzer for Marginalized Entrepreneurs
+# VittVaani — Scheme Analyzer for Entrepreneurs & Students
 
-> AI-powered government scheme analyzer for **marginalized Indian entrepreneurs**.
+> AI-powered government scheme analyzer for **marginalized Indian entrepreneurs and students**.
 > Smart India Hackathon 2026 · Team VittVaani
 
 **VittVaani** — an AI-powered government scheme analyzer for **marginalized
-Indian entrepreneurs** — it
+Indian entrepreneurs and students** — it
 helps women, SC/ST/OBC, persons with disabilities and rural micro-entrepreneurs
 discover the **government schemes they are actually eligible for** — not just a
-generic list. Tell us about your business once, and get ranked,
+generic list. Tell us about your background once, and get ranked,
 eligibility-scored recommendations with clear reasons, in your own language.
+
+Supports both **business/entrepreneurship** schemes (MUDRA, PMEGP, Stand-Up India,
+etc.) and **education loan** schemes (Vidya Lakshmi, CSIS, Dr. Ambedkar CSS,
+scholarships for SC/ST/minority/PwD students, state-specific schemes).
 
 Focused on the **Scheduled Caste (SC) concessional lending** mission for 2026-27:
 the recommender now covers the SC **concessional loan catalog** disbursed through
@@ -25,6 +29,17 @@ rates 6.5-8%).
   derives sector + tags so the matching engine uses real business context.
   Powered by Gemini with a built-in rule-based fallback so the app works even
   with **no API key**.
+- **Education & business flows** — choose between entrepreneurship or education
+  paths. Students get education-specific questions, course cost inputs, and
+  only see education loan/scholarship schemes. Business users see only
+  entrepreneurship schemes.
+- **State-aware eligibility hard filter** — state-specific schemes (e.g. Maharashtra,
+  Delhi, West Bengal) are automatically blocked for users outside those states,
+  so recommendations are always actionable.
+- **90+ government schemes** — curated catalog covering central + state schemes:
+  MUDRA, PMEGP, Stand-Up India, Vidya Lakshmi, CSIS, Dr. Ambedkar CSS,
+  Post-Matric SC, scholarships (SC/ST/OBC/minority/PwD), Ishan Uday, NHFDC,
+  and 15+ state-specific schemes (Maharashtra, Delhi, UP, Bihar, West Bengal, NE).
 - **Eligibility matching engine** — hard eligibility-rule filter followed by
   weighted relevance scoring → ranked results with a score breakdown per scheme.
   Concessional SC schemes are auto-excluded for applicants above the income
@@ -56,7 +71,7 @@ rates 6.5-8%).
 | ---------- | ---------- |
 | Frontend   | HTML5 · CSS3 · Vanilla JavaScript (ES6+), no build step |
 | Backend    | Python 3.10+ · FastAPI · Uvicorn |
-| Database   | SQLite (dev) · PostgreSQL (production-ready via `DATABASE_URL`) |
+| Database   | Neon Postgres (production) · SQLite (local dev) |
 | ORM        | SQLAlchemy 2.x |
 | Auth       | JWT (`python-jose` + `bcrypt`), OTP via SMTP for password reset |
 | AI         | Google Gemini (Interactions/Gemini models) + built-in rule fallback |
