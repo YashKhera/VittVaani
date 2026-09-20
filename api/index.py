@@ -1,6 +1,7 @@
 """Vercel serverless entrypoint for VittVaani."""
 import os
 import sys
+import traceback
 
 # Fix Neon channel_binding on Vercel (causes write failures)
 _db_url = os.environ.get("DATABASE_URL", "")
@@ -9,7 +10,9 @@ if "channel_binding=require" in _db_url and os.environ.get("VERCEL"):
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend"))
 
+from fastapi import Request  # noqa: E402
 from fastapi.routing import APIRoute  # noqa: E402
+from starlette.responses import JSONResponse  # noqa: E402
 from starlette.staticfiles import StaticFiles  # noqa: E402
 
 from app.main import app as _api_app  # noqa: E402
@@ -32,7 +35,19 @@ _api_app.router.routes = [
     if not (isinstance(r, APIRoute) and r.path == "/")
 ]
 
-# Mount static frontend (inside backend/ since Vercel ships that dir)
+# Exception handler: always log + return error detail
+async def _on_error(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    print(f"UNHANDLED {type(exc).__name__}: {exc}")
+    print(tb)
+    return JSONResponse(
+        {"error": f"{type(exc).__name__}: {exc}"},
+        status_code=500,
+    )
+
+_api_app.add_exception_handler(Exception, _on_error)
+
+# Mount static frontend
 _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 for _d in ("backend/frontend", "frontend"):
     _dir = os.path.join(_root, _d)
