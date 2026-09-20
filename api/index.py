@@ -1,105 +1,101 @@
-"""Vercel serverless entrypoint for the VittVaani FastAPI backend.
-
-Routing model (verified against the live deployment):
-- Vercel routes `/api` and its subpaths to this function natively and
-  preserves the original path (`scope["path"] == "/api/..."`), so the FastAPI
-  routers registered under `/api` match directly. No prefix stripping needed.
-- Any path that is NOT a route (``, `/login.html`, `/css/*`, ...) ALSO falls
-  through to this function with the original path intact, so the frontend is
-  served here via ``StaticFiles`` mounted at ``/`` with ``html=True``.
-
-`VERCEL=1` triggers the production bootstrap: `app.main` creates the tables on
-import, and the scheme catalog is seeded (idempotently) on the first cold start.
-"""
-import json
+"""Vercel serverless entrypoint for VittVaani."""
 import os
 import sys
 import traceback
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend"))
 
-from fastapi import Request  # noqa: E402
-from fastapi.routing import APIRoute  # noqa: E402
-from starlette.responses import JSONResponse  # noqa: E402
-from starlette.staticfiles import StaticFiles  # noqa: E402
-
-from app.main import app as _api_app  # noqa: E402  (import also runs create_all)
+from app.main import app as _api_app  # noqa: E402
 from data.schemes_seed import seed_schemes  # noqa: E402
 
-
-def _bootstrap_production_db():
+# ── Seed DB on first cold start ──────────────────────────────────────────────
+def _bootstrap():
     if not os.environ.get("VERCEL"):
         return
     try:
         from app.database import SessionLocal
-        from app.models.scheme import Scheme  # noqa: F401
-
+        from app.models.scheme import Scheme
         with SessionLocal() as db:
             if db.query(Scheme).count() == 0:
                 seed_schemes(db)
-    except Exception as exc:  # pragma: no cover - DB unreachable at cold start
-        print("VittVaani production DB bootstrap skipped:", exc)
+        print("VittVaani DB bootstrap OK")
+    except Exception as exc:
+        print("VittVaani DB bootstrap FAILED:", exc)
+        traceback.print_exc()
 
+_bootstrap()
 
-_bootstrap_production_db()
-
+# ── Remove the inner root "/" route (returns JSON; conflicts with static) ────
+from fastapi.routing import APIRoute
 _api_app.router.routes = [
     r for r in _api_app.router.routes
     if not (isinstance(r, APIRoute) and r.path == "/")
 ]
 
+# ── Mount static frontend ────────────────────────────────────────────────────
+from starlette.staticfiles import StaticFiles
 _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_candidates = [d for d in (os.path.join(_root, "backend", "frontend"), os.path.join(_root, "frontend")) if os.path.isdir(d)]
-if _candidates:
-    _api_app.mount("/", app=StaticFiles(directory=_candidates[0], html=True), name="static")
+for _d in ("backend/frontend", "frontend"):
+    _dir = os.path.join(_root, _d)
+    if os.path.isdir(_dir):
+        _api_app.mount("/", StaticFiles(directory=_dir, html=True), name="static")
+        break
 
+# ── Debug endpoint (temporary) ───────────────────────────────────────────────
+import json as _json
+from fastapi import Request
+from starlette.responses import JSONResponse
 
-async def _handle_exception(request: Request, exc: Exception):
-    tb = traceback.format_exc()
-    print("VittVaani unhandled exception:", type(exc).__name__, str(exc))
-    print(tb)
-    headers = dict(request.scope.get("headers") or [])
-    if b"x-vv-diag" in headers:
+@_api_app.get("/api/debug")
+async def _debug(request: Request):
+    info = {"env": {}, "db": {}, "imports": {}}
+    # env
+    for k in ("DATABASE_URL", "SECRET_KEY", "ENVIRONMENT", "FRONTEND_URL", "VERCEL"):
+        v = os.environ.get(k)
+        if v and k == "DATABASE_URL":
+            v = v[:40] + "..."
+        elif v and k == "SECRET_KEY":
+            v = v[:8] + "..."
+        info["env"][k] = v or "(not set)"
+    # imports
+    try:
+        import bcrypt; info["imports"]["bcrypt"] = bcrypt.__version__
+    except Exception as e:
+        info["imports"]["bcrypt"] = "FAILED: " + str(e)
+    try:
+        import jose; info["imports"]["jose"] = "OK"
+    except Exception as e:
+        info["imports"]["jose"] = "FAILED: " + str(e)
+    try:
+        import sqlalchemy; info["imports"]["sqlalchemy"] = sqlalchemy.__version__
+    except Exception as e:
+        info["imports"]["sqlalchemy"] = "FAILED: " + str(e)
+    # db
+    try:
+        from app.database import SessionLocal
+        from app.models.user import User
+        with SessionLocal() as db:
+            info["db"]["users_count"] = db.query(User).count()
+            info["db"]["status"] = "OK"
+    except Exception as e:
+        info["db"]["status"] = "FAILED: " + str(e)
+        info["db"]["traceback"] = traceback.format_exc().splitlines()[-3:]
+    return info
+
+# ── Register with full error reporting (temporary) ───────────────────────────
+from fastapi import Depends
+from sqlalchemy.orm import Session as DbSession
+from app.database import get_db
+from app.schemas.auth import RegisterRequest
+from app.services.auth_service import AuthService
+
+@_api_app.post("/api/debug-register")
+async def _debug_register(payload: RegisterRequest, db: DbSession = Depends(get_db)):
+    try:
+        result = AuthService(db).register(payload)
+        return {"ok": True, "email": payload.email}
+    except Exception as e:
         return JSONResponse(
-            {"error": type(exc).__name__ + ": " + str(exc), "traceback": tb.splitlines()},
             status_code=500,
+            content={"error": str(e), "type": type(e).__name__, "tb": traceback.format_exc().splitlines()[-10:]}
         )
-    return JSONResponse({"detail": "Internal Server Error"}, status_code=500)
-
-
-_api_app.add_exception_handler(Exception, _handle_exception)
-
-
-class _DiagApp:
-    """Echoes the raw ASGI scope when the `x-vv-diag: 1` header is present.
-
-    Temporary debugging aid for verifying Vercel's path handling; harmless in
-    production (returns JSON only for that exact header).
-    """
-
-    def __init__(self, target):
-        self.target = target
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] == "http":
-            headers = dict(scope.get("headers") or [])
-            if b"x-vv-scope" in headers:
-                body = json.dumps({
-                    "path": scope.get("path"),
-                    "raw_path": (scope.get("raw_path") or b"").decode("utf-8", "replace"),
-                    "root_path": scope.get("root_path"),
-                    "method": scope.get("method"),
-                    "host": (headers.get(b"host", b"") or b"").decode(),
-                    "ls_root": os.listdir(_root)[:40],
-                }).encode()
-                await send({
-                    "type": "http.response.start",
-                    "status": 200,
-                    "headers": [(b"content-type", b"application/json")],
-                })
-                await send({"type": "http.response.body", "body": body})
-                return
-        await self.target(scope, receive, send)
-
-
-app = _DiagApp(_api_app)
