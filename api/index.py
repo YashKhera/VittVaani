@@ -83,7 +83,7 @@ class _DiagApp:
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
             headers = dict(scope.get("headers") or [])
-            if b"x-vv-diag" in headers:
+            if b"x-vv-scope" in headers:
                 body = json.dumps({
                     "path": scope.get("path"),
                     "raw_path": (scope.get("raw_path") or b"").decode("utf-8", "replace"),
