@@ -14,10 +14,13 @@ import, and the scheme catalog is seeded (idempotently) on the first cold start.
 import json
 import os
 import sys
+import traceback
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend"))
 
+from fastapi import Request  # noqa: E402
 from fastapi.routing import APIRoute  # noqa: E402
+from starlette.responses import JSONResponse  # noqa: E402
 from starlette.staticfiles import StaticFiles  # noqa: E402
 
 from app.main import app as _api_app  # noqa: E402  (import also runs create_all)
@@ -49,6 +52,22 @@ _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _candidates = [d for d in (os.path.join(_root, "backend", "frontend"), os.path.join(_root, "frontend")) if os.path.isdir(d)]
 if _candidates:
     _api_app.mount("/", app=StaticFiles(directory=_candidates[0], html=True), name="static")
+
+
+async def _handle_exception(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    print("VittVaani unhandled exception:", type(exc).__name__, str(exc))
+    print(tb)
+    headers = dict(request.scope.get("headers") or [])
+    if b"x-vv-diag" in headers:
+        return JSONResponse(
+            {"error": type(exc).__name__ + ": " + str(exc), "traceback": tb.splitlines()},
+            status_code=500,
+        )
+    return JSONResponse({"detail": "Internal Server Error"}, status_code=500)
+
+
+_api_app.add_exception_handler(Exception, _handle_exception)
 
 
 class _DiagApp:
