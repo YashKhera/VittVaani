@@ -1,7 +1,7 @@
 # 14 · Implementation Plan (SC Concessional Lending Mission)
 
 **Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs & Students
-**Event:** Smart India Hackathon 2026 · **Status:** Steps 1–4 ✅ done, Step 5 next
+**Event:** Smart India Hackathon 2026 · **Status:** Steps 1–4 ✅ done, Step 5 next (geo-spatial locator & router UI)
 
 ---
 
