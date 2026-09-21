@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Financial Calculator - VittVaani</title>
+  <script>
+    (function () {
+      try {
+        var t = JSON.parse(localStorage.getItem('vittvaani:theme'));
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+    })();
+  </script>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/typography.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/accessibility.css">
+  <link rel="stylesheet" href="css/print.css">
+  <style>
+    .calc-page { max-width: 980px; margin: 0 auto; }
+    .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+    @media (max-width: 720px) { .calc-grid { grid-template-columns: 1fr; } }
+    .calc-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+    }
+    .calc-card h2 { font-size: var(--font-size-lg); margin-bottom: var(--space-3); }
+    .field { margin-bottom: var(--space-4); }
+    .field label { display: flex; justify-content: space-between; font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-1); }
+    .field output { color: var(--primary-color); font-weight: 600; }
+    .range-row { display: flex; align-items: center; gap: var(--space-3); }
+    .range-row input[type=range] { flex: 1; }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-2); }
+    .result-tile { background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); }
+    .result-tile .value { font-size: var(--font-size-lg); font-weight: 700; color: var(--primary-color); }
+    .result-tile .label { font-size: var(--font-size-sm); color: var(--text-secondary); }
+    .compare-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: var(--space-4); }
+    .compare-item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-bottom: 1px dashed var(--border); }
+    .compare-item:last-child { border-bottom: none; }
+    .compare-table { width: 100%; border-collapse: collapse; margin-top: var(--space-3); }
+    .compare-table th, .compare-table td { text-align: left; padding: var(--space-2); border-bottom: 1px solid var(--border); }
+    .compare-table th { color: var(--text-secondary); font-size: var(--font-size-sm); }
+    .note { font-size: var(--font-size-sm); color: var(--text-secondary); background: var(--bg-tertiary); padding: var(--space-3); border-radius: var(--radius-md); margin-top: var(--space-4); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body data-page="calculator">
+  <a href="#contentArea" class="skip-link">Skip to calculator</a>
+  <header id="navbar" class="navbar"></header>
+
+  <main class="container calc-page">
+    <div class="results-header mb-4">
+      <h1 class="mb-2" data-i18n="calculator.title">Financial Calculator</h1>
+      <p class="text-muted" data-i18n="calculator.sub">Estimate your monthly instalment (EMI), total interest and repayment plan for any loan.</p>
+    </div>
+
+    <div class="calc-grid">
+      <section class="calc-card">
+        <h2 data-i18n="calculator.title">Financial Calculator</h2>
+        <div class="field">
+          <label for="costInput"><span data-i18n="calculator.cost">Project cost (INR)</span><output id="costOutput">10,00,000</output></label>
+          <div class="range-row">
+            <input type="range" id="costInput" min="5000" max="5000000" step="5000" value="1000000">
+          </div>
+        </div>
+        <div class="field">
+          <label for="rateInput"><span data-i18n="calculator.rate">Annual interest rate (%)</span><output id="rateOutput">7</output></label>
+          <div class="range-row">
+            <input type="range" id="rateInput" min="0" max="20" step="0.1" value="7">
+          </div>
+        </div>
+        <div class="field">
+          <label for="tenureInput"><span data-i18n="calculator.tenure">Tenure (months)</span><output id="tenureOutput">60</output></label>
+          <div class="range-row">
+            <input type="range" id="tenureInput" min="6" max="120" step="6" value="60">
+          </div>
+        </div>
+        <div class="field">
+          <label for="coverageInput"><span data-i18n="calculator.coverage">Scheme coverage (%)</span><output id="coverageOutput">100</output></label>
+          <div class="range-row">
+            <input type="range" id="coverageInput" min="0" max="100" step="5" value="100">
+          </div>
+        </div>
+        <div class="field">
+          <label for="moraInput"><span data-i18n="calculator.moratorium">Moratorium (months)</span><output id="moraOutput">0</output></label>
+          <div class="range-row">
+            <input type="range" id="moraInput" min="0" max="60" step="3" value="0">
+          </div>
+        </div>
+        <div class="field">
+          <label for="subsidyInput"><span data-i18n="calculator.subsidy">Upfront subsidy (INR)</span><output id="subsidyOutput">0</output></label>
+          <div class="range-row">
+            <input type="range" id="subsidyInput" min="0" max="2000000" step="10000" value="0">
+          </div>
+        </div>
+        <div class="field">
+          <label for="upfrontInput"><span data-i18n="calculator.upfront">Your upfront payment (INR)</span><output id="upfrontOutput">0</output></label>
+          <div class="range-row">
+            <input type="range" id="upfrontInput" min="0" max="2000000" step="10000" value="0">
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" id="calcBtn" data-i18n="calculator.calculate">Calculate</button>
+      </section>
+
+      <section class="calc-card">
+        <h2 id="resultTitle" data-i18n="calculator.result.emi">Monthly EMI</h2>
+        <div id="calcResults" class="hidden">
+          <div class="result-grid">
+            <div class="result-tile">
+              <div class="value" id="resEMI">₹0</div>
+              <div class="label" data-i18n="calculator.result.emi">Monthly EMI</div>
+            </div>
+            <div class="result-tile">
+              <div class="value" id="resFinanced">₹0</div>
+              <div class="label" data-i18n="calculator.result.financed">Financed amount</div>
+            </div>
+            <div class="result-tile">
+              <div class="value" id="resInterest">₹0</div>
+              <div class="label" data-i18n="calculator.result.interest">Total interest</div>
+            </div>
+            <div class="result-tile">
+              <div class="value" id="resTotal">₹0</div>
+              <div class="label" data-i18n="calculator.result.total">Total payment</div>
+            </div>
+            <div class="result-tile">
+              <div class="value" id="resMora">₹0</div>
+              <div class="label" data-i18n="calculator.result.moraInterest">Moratorium interest</div>
+            </div>
+            <div class="result-tile">
+              <div class="value" id="resYears">0</div>
+              <div class="label" data-i18n="calculator.result.years">Years to repay</div>
+            </div>
+          </div>
+          <div class="note hidden" id="moraNote" data-i18n="calculator.notes.moratorium">Interest accrues during the moratorium and is added to the principal before repayment begins.</div>
+          <div class="mt-4">
+            <h3 class="mb-2">Amortization</h3>
+            <div id="amortTableWrap" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius: var(--radius-md);">
+            </div>
+          </div>
+        </div>
+        <div id="calcPlaceholder" class="text-muted" style="padding: var(--space-5) 0;">
+          Adjust the sliders above and press Calculate.
+        </div>
+      </section>
+    </div>
+
+    <section class="calc-card mt-5">
+      <h2 data-i18n="calculator.compare.title">Compare schemes</h2>
+      <p class="text-muted mb-3" data-i18n="calculator.compare.sub">Pick up to 5 schemes to compare their monthly instalment.</p>
+      <div class="compare-list" id="schemeList"><p class="text-muted p-3">Loading schemes…</p></div>
+      <div class="flex items-center gap-2 mb-3">
+        <input type="range" id="cmpTenure" min="6" max="120" step="6" value="60" style="flex:1">
+        <span class="text-sm text-muted" id="cmpTenureLabel">60 months</span>
+      </div>
+      <button class="btn btn-primary" id="compareBtn" data-i18n="calculator.compare.btn">Compare</button>
+      <div id="compareResult" class="hidden mt-4">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Scheme</th>
+              <th>Rate (%)</th>
+              <th>Coverage (%)</th>
+              <th>Moratorium (mo)</th>
+              <th>EMI</th>
+              <th>Total interest</th>
+            </tr>
+          </thead>
+          <tbody id="compareBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="siteFooter"></div>
+
+  <script src="js/services/storage.js"></script>
+  <script src="js/services/theme.js"></script>
+  <script src="js/i18n/translations.js"></script>
+  <script src="js/services/i18n.js"></script>
+  <script src="js/services/notifications.js"></script>
+  <script src="js/services/validation.js"></script>
+  <script src="js/data/questions.js"></script>
+  <script src="js/data/schemes.js"></script>
+  <script src="js/services/matching.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/components/navbar.js"></script>
+  <script src="js/components/footer.js"></script>
+  <script src="js/components/progress-ring.js"></script>
+  <script src="js/components/scheme-card.js"></script>
+  <script src="js/components/match-badge.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/pages/calculator.js"></script>
+
+</body>
+</html>

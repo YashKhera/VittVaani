@@ -712,7 +712,7 @@ class TestChannelFinance(ApiTestCase):
 
     def test_education_loan_granted_to_student(self):
         token = self._sc_setup(social_category="sc", annual_family_income="under_2.5l", estimated_project_cost=200000,
-                                education_status="undergraduate", business_sector="education")
+                                education_status="undergraduate", project_type="education", business_sector="education")
         recs = self.client.post("/api/recommendations", json={}, headers=self._headers(token)).json()["recommendations"]
         cats = {x["scheme"].get("loan_category") for x in recs}
         self.assertIn("education", cats)

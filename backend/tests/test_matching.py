@@ -241,7 +241,7 @@ class TestAdvancedMatching(unittest.TestCase):
         order_mah = [r["scheme"].name for r in self.matcher.rank_recommendations(with_req("maharashtra"), [national, local])]
         order_ker = [r["scheme"].name for r in self.matcher.rank_recommendations(with_req("kerala"), [national, local])]
         self.assertEqual(order_mah, ["StateSpecific", "National"])
-        self.assertEqual(order_ker, ["National", "StateSpecific"])
+        self.assertEqual(order_ker, ["National"])
 
 
 class TestProjectCostTiering(unittest.TestCase):

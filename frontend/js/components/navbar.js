@@ -14,6 +14,7 @@
         items = items.concat([
           { href: "questionnaire.html", key: "nav.questions" },
           { href: "results.html", key: "nav.results" },
+          { href: "calculator.html", key: "nav.calculator" },
           { href: "saved-schemes.html", key: "nav.saved" },
           { href: "profile-view.html", key: "nav.profile" }
         ]);
