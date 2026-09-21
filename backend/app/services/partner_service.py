@@ -72,17 +72,16 @@ class PartnerService:
             query = query.filter(ChannelPartner.pincode.like(f"%{pincode}%"))
         if partner_type:
             query = query.filter(ChannelPartner.partner_type == partner_type)
+
+        partners = query.all()
+
         if loan_category:
-            query = query.filter(ChannelPartner.loan_categories.contains(loan_category))
-
-        total = query.count()
-        partners = query.offset(skip).limit(limit).all()
-
+            partners = [p for p in partners if loan_category in normalize_list(p.loan_categories)]
         if min_health is not None:
             partners = [p for p in partners if _health_score(p) >= min_health]
-            total = min(total, len(partners))
 
-        return partners, total
+        total = len(partners)
+        return partners[skip : skip + limit], total
 
     def get(self, partner_id: int) -> ChannelPartner:
         partner = self.db.query(ChannelPartner).filter(ChannelPartner.id == partner_id).first()
@@ -128,8 +127,6 @@ class PartnerService:
         limit: int = 50,
     ) -> list[ChannelPartner]:
         query = self.db.query(ChannelPartner)
-        if loan_category:
-            query = query.filter(ChannelPartner.loan_categories.contains(loan_category))
         if state:
             query = query.filter(ChannelPartner.state == state)
         if city:
@@ -138,6 +135,9 @@ class PartnerService:
             query = query.filter(ChannelPartner.partner_type == partner_type)
 
         partners = query.all()
+        if loan_category:
+            partners = [p for p in partners if loan_category in normalize_list(p.loan_categories)]
+
         filtered = []
         for p in partners:
             util = float(p.fund_utilization_pct or 0.0)
