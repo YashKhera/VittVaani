@@ -4,7 +4,7 @@
 
 ### AI-Powered Government Scheme Analyzer for Marginalized Entrepreneurs & Students
 
-[![Smart India Hackathon 2026](https://img.shields.io/badge/Smart_India_Hackathon-2026-blue)]()
+[![Smart India Hackathon 2026](https://img.shields.io/badge/Smart_India_Hackathon-2026-blue)](https://sih.gov.in/sih2026PS)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-vitt--vaani.vercel.app-green)](https://vitt-vaani.vercel.app)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://docs.python.org/release/3.14.7/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
