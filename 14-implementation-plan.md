@@ -1,7 +1,7 @@
 # 14 · Implementation Plan (SC Concessional Lending Mission)
 
 **Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs & Students
-**Event:** Smart India Hackathon 2026 · **Status:** Steps 1–3 ✅ done, Step 4 next
+**Event:** Smart India Hackathon 2026 · **Status:** Steps 1–4 ✅ done, Step 5 next
 
 ---
 
@@ -58,13 +58,22 @@
 - **Further changes made:** Step 3 now complete — calculator deployed to
   production.
 
-## Step 4 — Channel Partner directory
+## Step 4 — Channel Partner directory  ✅ done
 
-- New ChannelPartner model + seed (100+ realistic partners spread across
-  states: SCA, PSB, RRB, NBFC-MFI with lat/long, loan categories served,
-  fund utilization %, NPA %, overdue status).
-- APIs: search (pincode/city/geo), nearest (haversine), and eligibility-filter
-  (categories + utilization < threshold + NPA score).
+- New ChannelPartner model (`app/models/channel_partner.py`) + seed
+  (`data/partners_seed.py`, **120 partners** across all 29 states: SCA, PSB,
+  RRB, NBFC-MFI with lat/long, loan categories served, fund utilization %,
+  NPA %, overdue %).
+- APIs (`/api/partners`, all auth-gated):
+  - `GET /api/partners` — search/filter (name/city/district, state, city,
+    pincode, partner_type, loan_category, min_health) with pagination.
+  - `GET /api/partners/nearest` — haversine nearest within `max_distance_km`,
+    ranked by distance then health, optionally filtered by loan_category/type.
+  - `GET /api/partners/eligible` — channel-health eligibility filter
+    (min_utilization, max_npa, max_overdue, loan_category, state, city, type).
+  - `GET /api/partners/{id}` — detail.
+- Partners seeded on Vercel cold-start alongside schemes (`api/index.py`).
+- 18 end-to-end tests; full suite 199 passed + 1 expected failure.
 
 ## Step 5 — Geo-spatial Locator & Router UI
 
@@ -98,7 +107,7 @@
 | 1    | Catalog & rules               | ✅ Done    |
 | 2    | Recommender tuning            | ✅ Done    |
 | 3    | Financial Calculator          | ✅ Done    |
-| 4    | Channel Partner directory     | ⬜ Pending |
+| 4    | Channel Partner directory     | ✅ Done    |
 | 5    | Geo-spatial Locator & Router  | ⬜ Pending |
 | 6    | Integration & impact polish   | ⬜ Pending |
 | 7    | Hardening & demo readiness    | ⬜ Pending |

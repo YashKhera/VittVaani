@@ -17,15 +17,19 @@ from starlette.staticfiles import StaticFiles  # noqa: E402
 
 from app.main import app as _api_app  # noqa: E402
 from data.schemes_seed import seed_schemes  # noqa: E402
+from data.partners_seed import seed_partners  # noqa: E402
 
 # Seed DB on first cold start
 if os.environ.get("VERCEL"):
     try:
         from app.database import SessionLocal
         from app.models.scheme import Scheme
+        from app.models.channel_partner import ChannelPartner
         with SessionLocal() as db:
             if db.query(Scheme).count() == 0:
                 seed_schemes(db)
+            if db.query(ChannelPartner).count() == 0:
+                seed_partners(db)
     except Exception as exc:
         print("DB bootstrap skipped:", exc)
 
