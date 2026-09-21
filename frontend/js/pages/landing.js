@@ -11,7 +11,7 @@
 
   function renderStats() {
     var stats = [
-      { n: "65+", key: "landing.stats.schemes" },
+      { n: "90+", key: "landing.stats.schemes" },
       { n: "14", key: "landing.stats.sectors" },
       { n: "29", key: "landing.stats.states" },
       { n: "23", key: "landing.stats.languages" }
