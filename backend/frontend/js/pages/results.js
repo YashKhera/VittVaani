@@ -49,8 +49,8 @@
         '<h2>' + I18n.t("results.empty.title") + "</h2>" +
         '<p>' + I18n.t("results.empty.text") + "</p>" +
         '<div class="flex justify-center gap-2 mt-4">' +
-        '<a class="btn btn-primary" href="questionnaire.html">' + I18n.t("questionnaire.start.btn") + "</a>" +
-        '<a class="btn btn-secondary" href="profile.html">' + I18n.t("profile.update") + "</a>" +
+        '<a class="btn btn-primary" href="/questionnaire">' + I18n.t("questionnaire.start.btn") + "</a>" +
+        '<a class="btn btn-secondary" href="/profile">' + I18n.t("profile.update") + "</a>" +
         "</div></div>";
       return;
     }
@@ -217,7 +217,7 @@
       .then(function () { afterProfile(mount); })
       .catch(function (err) {
         if (err && err.status === 404) {
-          window.location.href = "profile.html";
+          window.location.href = "/profile";
           return;
         }
         afterProfile(mount);

@@ -32,9 +32,10 @@
               try {
                 if (window.Auth) Auth.logout();
               } catch (e) {}
-              var page = window.location.pathname.split("/").pop() || "";
-              if (page.indexOf("login.html") !== 0 && page.indexOf("register.html") !== 0 && page.indexOf("index.html") !== 0) {
-                window.location.href = "login.html?next=" + encodeURIComponent(page + window.location.search);
+              var path = window.location.pathname || "/";
+              if (path !== "/login" && path !== "/register" && path !== "/" &&
+                  path.indexOf("/oauth/") !== 0) {
+                window.location.href = "/login?next=" + encodeURIComponent(path + window.location.search);
                 return;
               }
             }

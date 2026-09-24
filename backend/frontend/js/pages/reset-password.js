@@ -108,7 +108,7 @@
       API.post("/api/auth/reset-password", { token: resetToken, new_password: pw })
         .then(function () {
           Notify.success(I18n.t("auth.reset.success"));
-          window.location.href = "login.html";
+          window.location.href = "/login";
         })
         .catch(function (err) {
           setBtn(btn, I18n.t("auth.reset.btn"), false);

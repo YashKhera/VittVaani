@@ -72,7 +72,7 @@
           '<div class="text-center" style="padding: var(--space-7) 0">' +
           '<h2 data-i18n="profile.notFound">Complete your profile first</h2>' +
           '<p class="text-muted">' + I18n.t("profile.sub") + "</p>" +
-          '<a class="btn btn-primary mt-4" href="profile.html" data-i18n="profile.update">Edit profile</a>' +
+          '<a class="btn btn-primary mt-4" href="/profile" data-i18n="profile.update">Edit profile</a>' +
           "</div>";
         I18n.apply();
       });

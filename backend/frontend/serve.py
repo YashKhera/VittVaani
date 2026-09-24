@@ -35,11 +35,32 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         super().end_headers()
 
+    # Clean URLs: /partners -> partners.html (mirrors production).
+    PAGES = {
+        "questionnaire", "results", "scheme-details", "saved-schemes",
+        "reset-password", "profile-view", "profile", "calculator",
+        "partners", "register", "login",
+    }
+
     def do_GET(self):
-        if self.path in ("/", "/index.html"):
+        raw = self.path.split("?", 1)[0].rstrip("/")
+        if raw in ("", "/index.html"):
             self.path = "/index.html"
-        elif self.path == "/favicon.ico":
+        elif raw == "/favicon.ico":
             self.send_response(204)
+            self.end_headers()
+            return
+        elif raw == "/oauth/callback":
+            self.path = "/oauth/callback.html" + self.path[len(raw):]
+        elif raw.startswith("/oauth/") and raw.endswith(".html"):
+            pass
+        elif raw.lstrip("/") in self.PAGES:
+            self.path = "/" + raw.lstrip("/") + ".html" + self.path[len(raw):]
+        elif raw.endswith(".html"):
+            # Canonicalize legacy .html links to clean URLs.
+            qs = self.path[len(raw):]
+            self.send_response(301)
+            self.send_header("Location", (raw[:-5] or "/") + qs)
             self.end_headers()
             return
         return super().do_GET()

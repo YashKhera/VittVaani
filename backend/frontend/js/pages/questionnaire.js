@@ -425,7 +425,7 @@
     API.post("/api/ai/apply-from-description", payload, Auth.token())
       .then(function () {
         saveDraft("summary");
-        window.location.href = "results.html";
+        window.location.href = "/results";
       })
       .catch(function (err) {
         mount.innerHTML = '<div class="question-card text-center py-4"><p class="text-muted">' +
@@ -452,21 +452,18 @@
 
   function buildSteps(dynamicQuestions) {
     steps = [];
-    var isEdu = profile && profile.project_type === "education";
     if (!profile) {
       var cat = Questions.find("entrepreneur_type");
       if (cat) steps.push(cat);
     }
     var dyn = dynamicQuestions || [];
     dyn.forEach(function (q) { steps.push(q); });
-    if (!isEdu) {
-      ["financial", "non_financial", "description"].forEach(function (id) {
-        if (POST_PROFILE_IDS[id]) {
-          var q = Questions.find(id);
-          if (q) steps.push(q);
-        }
-      });
-    }
+    ["financial", "non_financial", "description"].forEach(function (id) {
+      if (POST_PROFILE_IDS[id]) {
+        var q = Questions.find(id);
+        if (q) steps.push(q);
+      }
+    });
     if (!profileHasScFields()) {
       SC_IDS.forEach(function (id) {
         var q = Questions.find(id);
@@ -603,7 +600,7 @@
       (help && (q.type === "num" || (q.type !== "textarea" && q.type !== "text")) ? '<p class="mb-4">' + help + "</p>" : "") +
       body +
       '<div class="question-actions">' +
-      (step > 0 ? '<button class="btn btn-secondary" id="prevBtn">' + I18n.t("common.previous") + "</button>" : '<a class="btn btn-secondary" href="index.html">' + I18n.t("common.cancel") + "</a>") +
+      (step > 0 ? '<button class="btn btn-secondary" id="prevBtn">' + I18n.t("common.previous") + "</button>" : '<a class="btn btn-secondary" href="/">' + I18n.t("common.cancel") + "</a>") +
       (q.type === "textarea" ? '<button class="btn btn-ghost" id="skipTextBtn">' + I18n.t("common.skip") + "</button>" : "") +
       '<button class="btn ' + (q.type === "review" ? "btn-primary btn-lg" : "btn-primary") + '" id="nextBtn">' + (q.type === "review" ? I18n.t("questionnaire.finish") : I18n.t("common.next")) + "</button>" +
       "</div></div>";
@@ -1037,7 +1034,7 @@
     var token = Auth.token();
 
     function done() {
-      window.location.href = "results.html";
+      window.location.href = "/results";
     }
 
     API.get("/api/profile", token, { skipAuthRedirect: true })
@@ -1064,7 +1061,7 @@
       .then(done)
       .catch(function (err) {
         Notify.error(err.message);
-        window.location.href = "results.html";
+        window.location.href = "/results";
       });
   }
 

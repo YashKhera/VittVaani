@@ -5,7 +5,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     var params = window.readQuery ? window.readQuery() : {};
     if (params.error) {
-      window.location.href = "../login.html?error=" + encodeURIComponent(params.error);
+      window.location.href = "..//login?error=" + encodeURIComponent(params.error);
       return;
     }
     var token = params.token || params.access_token || params.code || params.oauthtoken || "";

@@ -47,34 +47,34 @@
     },
     requireLogin: function (nextPage) {
       if (this.isLoggedIn()) return true;
-      var page = nextPage || window.location.pathname.split("/").pop() || "";
-      window.location.href = "login.html?next=" + encodeURIComponent(page + window.location.search);
+      var path = nextPage || window.location.pathname || "/";
+      window.location.href = "/login?next=" + encodeURIComponent(path + window.location.search);
       return false;
     },
     routeAfterAuth: function () {
-      function dest(rel) {
-        return (window.location.pathname.indexOf("/oauth/") !== -1 ? "../" : "") + rel;
+      function dest(clean) {
+        return clean; // all routes are root-relative clean URLs
       }
       if (!this.isLoggedIn()) {
-        var page = window.location.pathname.split("/").pop() || "";
-        window.location.href = "login.html?next=" + encodeURIComponent(page + window.location.search);
+        var path = window.location.pathname || "/";
+        window.location.href = "/login?next=" + encodeURIComponent(path + window.location.search);
         return;
       }
       API.get("/api/profile", this.token(), { skipAuthRedirect: true })
         .then(function (profile) {
           if (profile && profile.ai_confirmed) {
-            window.location.href = dest("results.html");
+            window.location.href = dest("/results");
           } else if (profile) {
-            window.location.href = dest("questionnaire.html");
+            window.location.href = dest("/questionnaire");
           } else {
-            window.location.href = dest("profile.html");
+            window.location.href = dest("/profile");
           }
         })
         .catch(function (err) {
           if (err && err.status === 404) {
-            window.location.href = dest("profile.html");
+            window.location.href = dest("/profile");
           } else {
-            window.location.href = dest("results.html");
+            window.location.href = dest("/results");
           }
         });
     },

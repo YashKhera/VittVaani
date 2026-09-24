@@ -106,7 +106,7 @@
 
       function done() {
         Notify.success(I18n.t("profile.saved.toast"));
-        window.location.href = "questionnaire.html";
+        window.location.href = "/questionnaire";
       }
       function fail(err) {
         errorEl.textContent = err.message;

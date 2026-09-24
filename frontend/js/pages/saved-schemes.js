@@ -29,7 +29,7 @@
       '<div class="mt-3 text-sm"><strong>' + esc(I18n.t("results.funding.range")) + ": </strong>" + esc(fundingText(s)) + "</div>" +
       (tags ? '<div class="mt-2">' + tags + "</div>" : "") +
       '<div class="scheme-actions mt-4">' +
-      '<a class="btn btn-secondary btn-sm" href="scheme-details.html?id=' + encodeURIComponent(id) + '">' + esc(I18n.t("common.viewDetails")) + "</a>" +
+      '<a class="btn btn-secondary btn-sm" href="/scheme-details?id=' + encodeURIComponent(id) + '">' + esc(I18n.t("common.viewDetails")) + "</a>" +
       '<button class="btn btn-sm btn-error" data-remove-saved="' + encodeURIComponent(id) + '">' + esc(I18n.t("common.remove")) + "</button>" +
       "</div></article>";
   }

@@ -3,7 +3,7 @@
 
   if (!document.body || document.body.dataset.page !== "partners") return;
   if (!window.Auth || !window.API) return;
-  if (!Auth.isLoggedIn()) { window.location.href = "login.html"; return; }
+  if (!Auth.isLoggedIn()) { window.location.href = "/login"; return; }
 
   var I18n = window.I18n;
   var API = window.API;
