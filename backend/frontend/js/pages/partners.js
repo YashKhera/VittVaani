@@ -194,42 +194,163 @@
     );
   }
 
+  function setBusy(busy) {
+    var btn = el("searchBtn");
+    if (btn) { btn.disabled = busy; btn.textContent = busy ? t("partners.loading") : t("partners.search.btn"); }
+  }
+
+  function fetchNearest(lat, lon, extra) {
+    extra = extra || {};
+    var path = "/api/partners/nearest?lat=" + encodeURIComponent(lat) + "&lon=" + encodeURIComponent(lon) +
+      "&max_distance_km=" + encodeURIComponent(extra.max_distance_km || 100) +
+      (extra.partner_type ? "&partner_type=" + encodeURIComponent(extra.partner_type) : "") +
+      (extra.loan_category ? "&loan_category=" + encodeURIComponent(extra.loan_category) : "") + "&limit=20";
+    return API.get(path, AuthNS.token());
+  }
+
+  // OpenStreetMap Nominatim — no API key needed. Pincode/city -> lat/lon.
+  function geocodePlace(q) {
+    var url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&country=India&" + q;
+    return fetch(url, { headers: { "Accept": "application/json" } }).then(function (res) {
+      if (!res.ok) throw new Error("geocode failed");
+      return res.json();
+    }).then(function (arr) {
+      if (!arr || !arr.length) throw new Error("not found");
+      return { lat: parseFloat(arr[0].lat), lon: parseFloat(arr[0].lon), display: arr[0].display_name };
+    });
+  }
+
+  function geocodePincode(pin) {
+    return geocodePlace("postalcode=" + encodeURIComponent(pin));
+  }
+
   function run(q) {
     var list = el("partnerList");
-    var sum = el("resultSummary");
     var btn = el("searchBtn");
-    if (btn) { btn.disabled = true; btn.textContent = t("partners.loading"); }
+    setBusy(true);
 
-    var path;
-    if (q.lat !== undefined && q.lon !== undefined) {
-      path = "/api/partners/nearest?lat=" + encodeURIComponent(q.lat) + "&lon=" + encodeURIComponent(q.lon) +
-        "&max_distance_km=50" + (q.partner_type ? "&partner_type=" + encodeURIComponent(q.partner_type) : "") +
-        (q.loan_category ? "&loan_category=" + encodeURIComponent(q.loan_category) : "") + "&limit=20";
-      API.get(path, AuthNS.token()).then(function (d) {
+    if (q.lat !== undefined && q.lon !== undefined && q.lat !== null) {
+      fetchNearest(q.lat, q.lon, q).then(function (d) {
         render(d.partners || [], d, q);
       }).catch(function (err) {
         if (list) list.innerHTML = '<p class="text-muted p-3">' + esc(err.message) + "</p>";
-      }).finally(function () {
-        if (btn) { btn.disabled = false; btn.textContent = t("partners.search"); }
-      });
+      }).finally(function () { setBusy(false); });
       return;
     }
 
     var f = readFilters();
-    if (!f.state && !f.pincode) {
-      if (list) list.innerHTML = '<p class="text-muted p-3">' + esc(t("partners.error.filters")) + "</p>";
-      if (btn) { btn.disabled = false; btn.textContent = t("partners.search"); }
+    // Pincode -> geocode to lat/lon, then nearest (map + ranking).
+    // Falls back to directory pincode filter if geocoding fails (offline/blocked).
+    if (f.pincode) {
+      showStatus(t("partners.geocoding"));
+      geocodePincode(f.pincode).then(function (g) {
+        located = { lat: g.lat, lon: g.lon };
+        showStatus(t("partners.located") + " " + g.lat.toFixed(3) + ", " + g.lon.toFixed(3));
+        return fetchNearest(g.lat, g.lon, {
+          partner_type: f.partner_type,
+          loan_category: f.loan_category,
+          max_distance_km: 150
+        });
+      }).then(function (d) {
+        render(d.partners || [], d, { lat: located.lat, lon: located.lon, partner_type: f.partner_type, loan_category: f.loan_category });
+      }).catch(function () {
+        showStatus(t("partners.error.pincode"), true);
+        var path = "/api/partners?" + buildQuery(f) + "&limit=50";
+        return API.get(path, AuthNS.token()).then(function (d) {
+          render(d.partners || [], d, { lat: null, lon: null });
+        });
+      }).finally(function () { setBusy(false); });
       return;
     }
 
-    path = "/api/partners?" + buildQuery(f) + "&limit=50";
+    if (!f.state && !f.partner_type && !f.loan_category) {
+      if (list) list.innerHTML = '<p class="text-muted p-3">' + esc(t("partners.error.filters")) + "</p>";
+      setBusy(false);
+      return;
+    }
+
+    var path = "/api/partners?" + buildQuery(f) + "&limit=50";
     API.get(path, AuthNS.token()).then(function (d) {
       render(d.partners || [], d, { lat: null, lon: null });
     }).catch(function (err) {
       if (list) list.innerHTML = '<p class="text-muted p-3">' + esc(err.message) + "</p>";
-    }).finally(function () {
-      if (btn) { btn.disabled = false; btn.textContent = t("partners.search"); }
-    });
+    }).finally(function () { setBusy(false); });
+  }
+
+  function readQuery() {
+    var out = {};
+    try {
+      var sp = new URLSearchParams(window.location.search || "");
+      ["scheme", "loan_category", "lat", "lon", "pincode", "state"].forEach(function (k) {
+        var v = sp.get(k);
+        if (v !== null && v !== "") out[k] = v;
+      });
+    } catch (e) {}
+    return out;
+  }
+
+  function applySchemeContext() {
+    var qp = readQuery();
+    var banner = el("schemeBanner");
+    var bannerName = el("schemeBannerName");
+    if (qp.loan_category) {
+      var catSel = el("schemeInput");
+      if (catSel) catSel.value = qp.loan_category;
+    }
+    if (qp.pincode) {
+      var pin = el("pincodeInput");
+      if (pin) pin.value = qp.pincode;
+    }
+    if (qp.state) {
+      var st = el("stateSelect");
+      if (st) st.value = qp.state;
+    }
+    if (!qp.scheme) return qp;
+    // Scheme -> loan_category prefill + banner, then auto-run nearest/eligible.
+    API.get("/api/schemes/" + encodeURIComponent(qp.scheme), AuthNS.token(), { skipAuthRedirect: true })
+      .then(function (s) {
+        var cat = s.loan_category || qp.loan_category || "";
+        if (cat) {
+          var sel = el("schemeInput");
+          if (sel) sel.value = cat;
+          qp.loan_category = cat;
+        }
+        if (banner && bannerName) {
+          bannerName.textContent = s.name || qp.scheme;
+          banner.classList.remove("hidden");
+        }
+        autoRunFromQuery(qp);
+      })
+      .catch(function () {
+        if (banner && bannerName) {
+          bannerName.textContent = qp.scheme;
+          banner.classList.remove("hidden");
+        }
+        autoRunFromQuery(qp);
+      });
+    return qp;
+  }
+
+  function autoRunFromQuery(qp) {
+    if (qp.lat && qp.lon) {
+      run({ lat: parseFloat(qp.lat), lon: parseFloat(qp.lon), partner_type: "", loan_category: qp.loan_category || "" });
+    } else if (qp.pincode) {
+      run({ lat: undefined, lon: undefined });
+    } else if (located) {
+      run({ lat: located.lat, lon: located.lon, loan_category: qp.loan_category || "" });
+    } else {
+      // No location yet: show eligible partners for the scheme's loan category.
+      var path = "/api/partners/eligible?limit=50" +
+        (qp.loan_category ? "&loan_category=" + encodeURIComponent(qp.loan_category) : "") +
+        (qp.state ? "&state=" + encodeURIComponent(qp.state) : "");
+      setBusy(true);
+      API.get(path, AuthNS.token()).then(function (d) {
+        render(d.partners || [], d, { lat: null, lon: null });
+      }).catch(function (err) {
+        var list = el("partnerList");
+        if (list) list.innerHTML = '<p class="text-muted p-3">' + esc(err.message) + "</p>";
+      }).finally(function () { setBusy(false); });
+    }
   }
 
   function render(items, d, q) {
@@ -328,6 +449,20 @@
     bind("locateBtn", locateByBrowser);
     var form = el("partnerSearchForm");
     if (form) form.addEventListener("submit", function (e) { e.preventDefault(); run({ lat: undefined, lon: undefined }); });
+    bind("schemeBannerClear", function () {
+      var banner = el("schemeBanner");
+      if (banner) banner.classList.add("hidden");
+      try {
+        var url = new URL(window.location.href);
+        url.searchParams.delete("scheme");
+        window.history.replaceState({}, "", url.toString());
+      } catch (e) {}
+    });
+    var qp = applySchemeContext();
+    // Deep-link without scheme id (e.g. ?pincode=440012 or ?lat=&lon=) still auto-runs.
+    if (qp && !qp.scheme && (qp.pincode || (qp.lat && qp.lon))) {
+      autoRunFromQuery(qp);
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);

@@ -1,7 +1,7 @@
 # 14 · Implementation Plan (SC Concessional Lending Mission)
 
 **Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs & Students
-**Event:** Smart India Hackathon 2026 · **Status:** Steps 1–4 ✅ done, Step 5 next (geo-spatial locator & router UI)
+**Event:** Smart India Hackathon 2026 · **Status:** Steps 1–5 ✅ done, Step 6 next (integration & impact polish)
 
 ---
 
@@ -75,12 +75,17 @@
 - Partners seeded on Vercel cold-start alongside schemes (`api/index.py`).
 - 18 end-to-end tests; full suite 199 passed + 1 expected failure.
 
-## Step 5 — Geo-spatial Locator & Router UI
+## Step 5 — Geo-spatial Locator & Router UI  ✅ done
 
 - Leaflet + OpenStreetMap (no API key), pincode/city lookup + browser
   geolocation.
 - On a scheme → show nearest eligible partners, ranked by distance and health
   (utilization, NPA, overdues), with directions link + contact.
+- Implemented: `partners.html?scheme=<id>&loan_category=<cat>` deep-link with
+  scheme banner + auto-run (`/eligible` fallback when no location);
+  pincode → Nominatim geocode → `/nearest` with directory-filter fallback;
+  browser geolocate → `/nearest`; "Find partners" CTAs on scheme cards +
+  scheme-details; EN/HI i18n; frontend copy synced to `backend/frontend/`.
 
 ## Step 6 — Integration & impact polish
 
@@ -108,6 +113,6 @@
 | 2    | Recommender tuning            | ✅ Done    |
 | 3    | Financial Calculator          | ✅ Done    |
 | 4    | Channel Partner directory     | ✅ Done    |
-| 5    | Geo-spatial Locator & Router  | ⬜ Pending |
+| 5    | Geo-spatial Locator & Router  | ✅ Done    |
 | 6    | Integration & impact polish   | ⬜ Pending |
 | 7    | Hardening & demo readiness    | ⬜ Pending |
