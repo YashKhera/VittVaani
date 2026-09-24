@@ -425,7 +425,7 @@
     API.post("/api/ai/apply-from-description", payload, Auth.token())
       .then(function () {
         saveDraft("summary");
-        window.location.href = "/results";
+        window.location.href = "/my-schemes";
       })
       .catch(function (err) {
         mount.innerHTML = '<div class="question-card text-center py-4"><p class="text-muted">' +
@@ -437,7 +437,7 @@
 
   function loadForm() {
     var token = Auth.token();
-    return API.post("/api/questionnaire/dynamic", { answers: answers }, token)
+    return API.post("/api/find-schemes/dynamic", { answers: answers }, token)
       .then(function (dyn) {
         buildSteps((dyn && dyn.questions) || []);
         if (step >= STEP_TOTAL) step = STEP_TOTAL - 1;
@@ -505,7 +505,7 @@
       if (cb) cb();
       return;
     }
-    API.put("/api/questionnaire/progress", { answers: answers, step: step }, Auth.token())
+    API.put("/api/find-schemes/progress", { answers: answers, step: step }, Auth.token())
       .then(function () { if (cb) cb(); })
       .catch(function () { if (cb) cb(); });
   }
@@ -600,7 +600,7 @@
       (help && (q.type === "num" || (q.type !== "textarea" && q.type !== "text")) ? '<p class="mb-4">' + help + "</p>" : "") +
       body +
       '<div class="question-actions">' +
-      (step > 0 ? '<button class="btn btn-secondary" id="prevBtn">' + I18n.t("common.previous") + "</button>" : '<a class="btn btn-secondary" href="/">' + I18n.t("common.cancel") + "</a>") +
+      (step > 0 ? '<button class="btn btn-secondary" id="prevBtn">' + I18n.t("common.previous") + "</button>" : '<a class="btn btn-secondary" href="/home">' + I18n.t("common.cancel") + "</a>") +
       (q.type === "textarea" ? '<button class="btn btn-ghost" id="skipTextBtn">' + I18n.t("common.skip") + "</button>" : "") +
       '<button class="btn ' + (q.type === "review" ? "btn-primary btn-lg" : "btn-primary") + '" id="nextBtn">' + (q.type === "review" ? I18n.t("questionnaire.finish") : I18n.t("common.next")) + "</button>" +
       "</div></div>";
@@ -1034,7 +1034,7 @@
     var token = Auth.token();
 
     function done() {
-      window.location.href = "/results";
+      window.location.href = "/my-schemes";
     }
 
     API.get("/api/profile", token, { skipAuthRedirect: true })
@@ -1061,7 +1061,7 @@
       .then(done)
       .catch(function (err) {
         Notify.error(err.message);
-        window.location.href = "/results";
+        window.location.href = "/my-schemes";
       });
   }
 
@@ -1074,7 +1074,7 @@
       .then(function (p) { profile = p; })
       .catch(function () { profile = null; })
       .then(function () {
-        return API.get("/api/questionnaire/progress", token, { skipAuthRedirect: true });
+        return API.get("/api/find-schemes/progress", token, { skipAuthRedirect: true });
       })
       .then(function (prog) {
         answers = (prog && prog.answers && typeof prog.answers === "object") ? prog.answers : {};

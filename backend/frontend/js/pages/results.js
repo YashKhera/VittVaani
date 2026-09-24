@@ -16,7 +16,7 @@
 
   function loadSaved() {
     if (!Auth.isLoggedIn() || !Auth.token()) return Promise.resolve([]);
-    return API.get("/api/saved-schemes", Auth.token(), { skipAuthRedirect: true })
+    return API.get("/api/saved", Auth.token(), { skipAuthRedirect: true })
       .then(function (data) {
         savedIdsFromServer = (data.saved_schemes || data.schemes || []).map(function (s) {
           return s.scheme ? s.scheme.id : (s.id || s.scheme_id);
@@ -49,8 +49,8 @@
         '<h2>' + I18n.t("results.empty.title") + "</h2>" +
         '<p>' + I18n.t("results.empty.text") + "</p>" +
         '<div class="flex justify-center gap-2 mt-4">' +
-        '<a class="btn btn-primary" href="/questionnaire">' + I18n.t("questionnaire.start.btn") + "</a>" +
-        '<a class="btn btn-secondary" href="/profile">' + I18n.t("profile.update") + "</a>" +
+        '<a class="btn btn-primary" href="/find-schemes">' + I18n.t("questionnaire.start.btn") + "</a>" +
+        '<a class="btn btn-secondary" href="/profile/edit">' + I18n.t("profile.update") + "</a>" +
         "</div></div>";
       return;
     }
@@ -217,7 +217,7 @@
       .then(function () { afterProfile(mount); })
       .catch(function (err) {
         if (err && err.status === 404) {
-          window.location.href = "/profile";
+          window.location.href = "/profile/edit";
           return;
         }
         afterProfile(mount);

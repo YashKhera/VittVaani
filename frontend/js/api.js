@@ -33,7 +33,7 @@
                 if (window.Auth) Auth.logout();
               } catch (e) {}
               var path = window.location.pathname || "/";
-              if (path !== "/login" && path !== "/register" && path !== "/" &&
+              if (path !== "/login" && path !== "/signup" && path !== "/" && path !== "/home" &&
                   path.indexOf("/oauth/") !== 0) {
                 window.location.href = "/login?next=" + encodeURIComponent(path + window.location.search);
                 return;

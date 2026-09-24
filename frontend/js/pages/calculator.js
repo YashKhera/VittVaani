@@ -83,7 +83,7 @@
     var btn = document.getElementById("calcBtn");
     btn.disabled = true;
     btn.textContent = I18n.t("calculator.loading");
-    API.post("/api/calculator", {
+    API.post("/api/emi-calculator", {
       project_cost: readCost(),
       interest_rate_annual: readRate(),
       tenure_months: readTenure(),
@@ -106,7 +106,7 @@
   function loadSchemes() {
     var list = document.getElementById("schemeList");
     if (schemesCache) { renderSchemeList(list, schemesCache); return Promise.resolve(schemesCache); }
-    API.get("/api/calculator/schemes", Auth.token(), { skipAuthRedirect: true })
+    API.get("/api/emi-calculator/schemes", Auth.token(), { skipAuthRedirect: true })
       .then(function (data) {
         schemesCache = data.items || [];
         schemesMeta.personalized = !!data.personalized;
@@ -179,7 +179,7 @@
     var btn = document.getElementById("compareBtn");
     btn.disabled = true;
     btn.textContent = I18n.t("calculator.loading");
-    API.post("/api/calculator/schemes", {
+    API.post("/api/emi-calculator/schemes", {
       scheme_ids: ids,
       project_cost: readCost(),
       tenure_months: parseInt(document.getElementById("cmpTenure").value, 10) || 60,

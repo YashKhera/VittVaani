@@ -55,8 +55,8 @@
       var loanCat = body.loan_category ? "&loan_category=" + encodeURIComponent(body.loan_category) : "";
       html +=
         '<div class="scheme-actions mt-4">' +
-        '<a class="btn btn-secondary btn-sm" href="/scheme-details?id=' + encodeURIComponent(id) + '">' + I18n.t("common.viewDetails") + "</a>" +
-        '<a class="btn btn-ghost btn-sm" href="/calculator?scheme=' + encodeURIComponent(id) + '&autocalc=1" data-i18n="calculator.cta">' + I18n.t("calculator.cta") + "</a>" +
+        '<a class="btn btn-secondary btn-sm" href="/scheme?id=' + encodeURIComponent(id) + '">' + I18n.t("common.viewDetails") + "</a>" +
+        '<a class="btn btn-ghost btn-sm" href="/emi-calculator?scheme=' + encodeURIComponent(id) + '&autocalc=1" data-i18n="calculator.cta">' + I18n.t("calculator.cta") + "</a>" +
         '<a class="btn btn-ghost btn-sm" href="/partners?scheme=' + encodeURIComponent(id) + loanCat + '">' + I18n.t("partners.find") + "</a>" +
         (opts.allowSave === false ? "" :
           '<button class="btn btn-sm ' + (opts.saved ? "btn-primary" : "btn-ghost") + '" data-save-scheme="' + encodeURIComponent(id) + '" aria-label="Save scheme">' + (opts.saved ? "★ " + I18n.t("common.saved") : "☆ " + I18n.t("common.save")) + "</button>") +
@@ -72,7 +72,7 @@
         btn.addEventListener("click", function () {
           var id = decodeURIComponent(btn.getAttribute("data-save-scheme"));
           if (btn.classList.contains("btn-primary")) {
-            API.del("/api/saved-schemes/" + encodeURIComponent(id), Auth.token())
+            API.del("/api/saved/" + encodeURIComponent(id), Auth.token())
               .then(function () {
                 btn.classList.remove("btn-primary"); btn.classList.add("btn-ghost");
                 btn.textContent = "☆ " + I18n.t("common.save");
@@ -81,7 +81,7 @@
               })
               .catch(function (e) { Notify.error(e.message); });
           } else {
-            API.post("/api/saved-schemes/" + encodeURIComponent(id), {}, Auth.token())
+            API.post("/api/saved/" + encodeURIComponent(id), {}, Auth.token())
               .then(function () {
                 btn.classList.remove("btn-ghost"); btn.classList.add("btn-primary");
                 btn.textContent = "★ " + I18n.t("common.saved");
@@ -95,7 +95,7 @@
       mount.querySelectorAll("[data-remove-scheme]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var id = decodeURIComponent(btn.getAttribute("data-remove-scheme"));
-          API.del("/api/saved-schemes/" + encodeURIComponent(id), Auth.token())
+          API.del("/api/saved/" + encodeURIComponent(id), Auth.token())
             .then(function () {
               btn.closest(".scheme-card").remove();
               Notify.success(I18n.t("saved.remove.toast"));

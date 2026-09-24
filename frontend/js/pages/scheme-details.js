@@ -81,9 +81,9 @@
       "<h1 class=\"mb-1\">" + esc(scheme.name) + "</h1>" +
       '<div class="flex gap-2">' +
       '<button class="btn btn-primary btn-sm" id="saveBtn">' + (isSaved ? "★ " + I18n.t("common.saved") : "☆ " + I18n.t("common.save")) + "</button>" +
-      '<a class="btn btn-secondary btn-sm" href="/calculator?scheme=' + encodeURIComponent(scheme.id) + '&autocalc=1" data-i18n="calculator.cta">Calculate EMI for this scheme</a>' +
+      '<a class="btn btn-secondary btn-sm" href="/emi-calculator?scheme=' + encodeURIComponent(scheme.id) + '&autocalc=1" data-i18n="calculator.cta">Calculate EMI for this scheme</a>' +
       '<a class="btn btn-secondary btn-sm" href="/partners?scheme=' + encodeURIComponent(scheme.id) + (scheme.loan_category ? "&loan_category=" + encodeURIComponent(scheme.loan_category) : "") + '">' + esc(I18n.t("partners.find")) + "</a>" +
-      '<a class="btn btn-secondary btn-sm" href="/results" data-i18n="details.back">Back to results</a>' +
+      '<a class="btn btn-secondary btn-sm" href="/my-schemes" data-i18n="details.back">Back to results</a>' +
       "</div></div>" +
       '<p class="text-muted mb-0 text-sm">' + esc(cap(scheme.government_level || "")) + " · " + esc(listOf(scheme.sectors).join(", ") || "All sectors") + "</p>" +
       "</div>" +
@@ -95,7 +95,7 @@
 
   function updateSaveState(id) {
     if (!Auth.isLoggedIn() || !Auth.token()) return Promise.resolve(false);
-    return API.get("/api/saved-schemes", Auth.token(), { skipAuthRedirect: true })
+    return API.get("/api/saved", Auth.token(), { skipAuthRedirect: true })
       .then(function (data) {
         var items = (data && (data.saved_schemes || data.schemes)) || [];
         isSaved = items.some(function (e) {
@@ -112,8 +112,8 @@
     if (!Auth.isLoggedIn()) { window.location.href = "/login"; return; }
     var id = scheme.id;
     var request = isSaved
-      ? API.del("/api/saved-schemes/" + encodeURIComponent(id), Auth.token())
-      : API.post("/api/saved-schemes/" + encodeURIComponent(id), {}, Auth.token());
+      ? API.del("/api/saved/" + encodeURIComponent(id), Auth.token())
+      : API.post("/api/saved/" + encodeURIComponent(id), {}, Auth.token());
     request.then(function () {
       isSaved = !isSaved;
       var btn = document.getElementById("saveBtn");
@@ -129,7 +129,7 @@
     var params = window.readQuery ? window.readQuery() : {};
     var id = params.id;
     if (!id) {
-      window.location.href = "/results";
+      window.location.href = "/my-schemes";
       return;
     }
     API.get("/api/schemes/" + encodeURIComponent(id), Auth.token())
@@ -145,7 +145,7 @@
           '<div class="detail-card text-center">' +
           "<h2 data-i18n=\"details.notFound\">Scheme not found</h2>" +
           '<p class="text-muted">' + esc(err.message) + "</p>" +
-          '<a class="btn btn-primary mt-3" href="/results" data-i18n="details.back">Back to results</a>' +
+          '<a class="btn btn-primary mt-3" href="/my-schemes" data-i18n="details.back">Back to results</a>' +
           "</div>";
         I18n.apply();
       });

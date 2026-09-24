@@ -106,7 +106,7 @@
 
       function done() {
         Notify.success(I18n.t("profile.saved.toast"));
-        window.location.href = "/questionnaire";
+        window.location.href = "/find-schemes";
       }
       function fail(err) {
         errorEl.textContent = err.message;

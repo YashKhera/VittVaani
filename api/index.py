@@ -61,6 +61,35 @@ for _d in ("backend/frontend", "frontend"):
         _static_dir = _dir
         break
 
+# Friendly slugs shown in the address bar (files stay as-is on disk).
+SLUGS = {
+    "home": "index.html",
+    "login": "login.html",
+    "signup": "register.html",
+    "find-schemes": "questionnaire.html",
+    "my-schemes": "results.html",
+    "scheme": "scheme-details.html",
+    "saved": "saved-schemes.html",
+    "emi-calculator": "calculator.html",
+    "partners": "partners.html",
+    "profile": "profile-view.html",
+    "profile/edit": "profile.html",
+    "reset-password": "reset-password.html",
+    "oauth/callback": "oauth/callback.html",
+}
+
+# Retired paths (first clean-URL pass + legacy .html) -> current slugs.
+LEGACY = {
+    "index": "home",
+    "register": "signup",
+    "questionnaire": "find-schemes",
+    "results": "my-schemes",
+    "scheme-details": "scheme",
+    "saved-schemes": "saved",
+    "calculator": "emi-calculator",
+    "profile-view": "profile",
+}
+
 _API_PREFIXES = ("/api", "/docs", "/openapi", "/redoc")
 
 
@@ -68,18 +97,35 @@ _API_PREFIXES = ("/api", "/docs", "/openapi", "/redoc")
 async def _clean_urls(request: Request, call_next):
     path = request.url.path
     if path.endswith(".html"):
-        clean = path[:-5] or "/"
-        return RedirectResponse(url=str(request.url.replace(path=clean)), status_code=301)
+        legacy = path[1:-5] or "index"
+        slug = "/" + LEGACY.get(legacy, legacy)
+        return RedirectResponse(url=str(request.url.replace(path=slug)), status_code=301)
+    if path == "/":
+        return await call_next(request)  # StaticFiles serves index.html
+    if path == "/home":
+        request.scope["path"] = "/index.html"
+        request.scope["raw_path"] = b"/index.html"
+        return await call_next(request)
+    if (
+        path.endswith("/")
+        and not path.startswith(_API_PREFIXES)
+        and "." not in path.rsplit("/", 1)[-1]
+    ):
+        return RedirectResponse(
+            url=str(request.url.replace(path=path.rstrip("/"))), status_code=301)
+    stripped = path.strip("/")
+    if stripped in LEGACY:
+        return RedirectResponse(
+            url=str(request.url.replace(path="/" + LEGACY[stripped])), status_code=301)
     if (
         _static_dir
         and not path.startswith(_API_PREFIXES)
         and "." not in path.rsplit("/", 1)[-1]  # not a file asset
+        and stripped in SLUGS
     ):
-        candidate = path.strip("/") or "index"
-        full = os.path.join(_static_dir, candidate + ".html")
-        if os.path.isfile(full):
-            request.scope["path"] = "/" + candidate + ".html"
-            request.scope["raw_path"] = ("/" + candidate + ".html").encode("latin-1")
+        target = "/" + SLUGS[stripped]
+        request.scope["path"] = target
+        request.scope["raw_path"] = target.encode("latin-1")
     return await call_next(request)
 
 

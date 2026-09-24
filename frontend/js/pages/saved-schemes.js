@@ -29,7 +29,7 @@
       '<div class="mt-3 text-sm"><strong>' + esc(I18n.t("results.funding.range")) + ": </strong>" + esc(fundingText(s)) + "</div>" +
       (tags ? '<div class="mt-2">' + tags + "</div>" : "") +
       '<div class="scheme-actions mt-4">' +
-      '<a class="btn btn-secondary btn-sm" href="/scheme-details?id=' + encodeURIComponent(id) + '">' + esc(I18n.t("common.viewDetails")) + "</a>" +
+      '<a class="btn btn-secondary btn-sm" href="/scheme?id=' + encodeURIComponent(id) + '">' + esc(I18n.t("common.viewDetails")) + "</a>" +
       '<button class="btn btn-sm btn-error" data-remove-saved="' + encodeURIComponent(id) + '">' + esc(I18n.t("common.remove")) + "</button>" +
       "</div></article>";
   }
@@ -50,7 +50,7 @@
     grid.querySelectorAll("[data-remove-saved]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var id = decodeURIComponent(btn.getAttribute("data-remove-saved"));
-        API.del("/api/saved-schemes/" + encodeURIComponent(id), Auth.token())
+        API.del("/api/saved/" + encodeURIComponent(id), Auth.token())
           .then(function () {
             var card = btn.closest(".scheme-card");
             if (card) card.remove();
@@ -72,7 +72,7 @@
     if (!Auth.requireLogin()) return;
     var grid = document.getElementById("savedGrid");
     var empty = document.getElementById("emptyState");
-    API.get("/api/saved-schemes", Auth.token())
+    API.get("/api/saved", Auth.token())
       .then(function (data) {
         var items = (data && (data.saved_schemes || data.schemes)) || [];
         if (!items.length) { empty.classList.remove("hidden"); updateCount(grid, []); grid.innerHTML = ""; return; }

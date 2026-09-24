@@ -6,7 +6,7 @@
 
   window.Auth = {
     register: function (email, password, name, phone) {
-      return API.post("/api/auth/register", { email: email, password: password, name: name, phone_number: phone || "" });
+      return API.post("/api/auth/signup", { email: email, password: password, name: name, phone_number: phone || "" });
     },
     login: function (email, password) {
       return API.post("/api/auth/login", { email: email, password: password }).then(function (data) {
@@ -63,18 +63,18 @@
       API.get("/api/profile", this.token(), { skipAuthRedirect: true })
         .then(function (profile) {
           if (profile && profile.ai_confirmed) {
-            window.location.href = dest("/results");
+            window.location.href = dest("/my-schemes");
           } else if (profile) {
-            window.location.href = dest("/questionnaire");
+            window.location.href = dest("/find-schemes");
           } else {
-            window.location.href = dest("/profile");
+            window.location.href = dest("/profile/edit");
           }
         })
         .catch(function (err) {
           if (err && err.status === 404) {
-            window.location.href = dest("/profile");
+            window.location.href = dest("/profile/edit");
           } else {
-            window.location.href = dest("/results");
+            window.location.href = dest("/my-schemes");
           }
         });
     },
