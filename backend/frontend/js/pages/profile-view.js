@@ -49,6 +49,10 @@
           { l: I18n.t("profile.description"), v: p.description, k: "description" }
         ];
         var support = (Array.isArray(p.support_needs) ? p.support_needs : []).join(", ");
+        if (p.project_type === "education") {
+          var bizKeys = { business_name: 1, business_sector: 1, business_stage: 1, annual_revenue: 1, employee_count: 1 };
+          fields = fields.filter(function (f) { return !bizKeys[f.k]; });
+        }
 
         var filled = 0;
         var tracked = ["full_name", "phone_number", "state", "district", "business_name", "business_sector", "business_stage", "annual_revenue"];

@@ -28,7 +28,21 @@
     panel.setAttribute("aria-hidden", isSc() ? "false" : "true");
   }
 
+  function isEducation() {
+    var el = document.getElementById("project_type");
+    return el && el.value === "education";
+  }
+
+  function toggleBusinessPanel() {
+    var section = document.getElementById("businessSection");
+    if (!section) return;
+    var edu = isEducation();
+    section.classList.toggle("hidden", edu);
+    section.setAttribute("aria-hidden", edu ? "true" : "false");
+  }
+
   function collect() {
+    var edu = isEducation();
     return {
       full_name: document.getElementById("full_name").value.trim(),
       phone_number: document.getElementById("phone_number").value.trim(),
@@ -43,11 +57,12 @@
       estimated_project_cost: document.getElementById("estimated_project_cost").value === ""
         ? null
         : Number(document.getElementById("estimated_project_cost").value),
-      business_name: document.getElementById("business_name").value.trim(),
-      business_sector: document.getElementById("business_sector").value,
-      business_stage: document.getElementById("business_stage").value,
-      annual_revenue: document.getElementById("annual_revenue").value,
-      employee_count: document.getElementById("employee_count").value.trim()
+      // Education profiles must not carry stale business data into matching.
+      business_name: edu ? "" : document.getElementById("business_name").value.trim(),
+      business_sector: edu ? "" : document.getElementById("business_sector").value,
+      business_stage: edu ? "" : document.getElementById("business_stage").value,
+      annual_revenue: edu ? "" : document.getElementById("annual_revenue").value,
+      employee_count: edu ? "" : document.getElementById("employee_count").value.trim()
     };
   }
 
@@ -84,10 +99,12 @@
         fillSelect("annual_family_income", Questions.familyIncomeGroups, p.annual_family_income);
         fillSelect("education_status", Questions.educationStatuses, p.education_status);
         toggleScPanel();
+        toggleBusinessPanel();
       })
-      .catch(function () { /* no profile yet */ });
+      .catch(function () { toggleBusinessPanel(); });
 
     document.getElementById("social_category").addEventListener("change", toggleScPanel);
+    document.getElementById("project_type").addEventListener("change", toggleBusinessPanel);
 
     document.getElementById("profileForm").addEventListener("submit", function (e) {
       e.preventDefault();
