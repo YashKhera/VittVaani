@@ -1,10 +1,11 @@
 import hashlib
-import json
 from typing import Optional
 
 from app.config import settings
+from app.database import SessionLocal
 from app.models.profile import EntrepreneurProfile
 from app.models.scheme import Scheme
+from app.models.scheme_explanation import SchemeExplanation
 from app.services.gemini_client import call_gemini_text
 
 
@@ -25,6 +26,69 @@ class AIExplanationService:
     def _gemini_text(prompt: str) -> str:
         return call_gemini_text(prompt, max_tokens=1024)
 
+    @staticmethod
+    def criteria_key(profile: EntrepreneurProfile, matched_criteria: list[str]) -> str:
+        parts = [
+            (profile.business_sector or "").lower().strip(),
+            (profile.state or "").lower().strip(),
+            (profile.business_stage or "").lower().strip(),
+            (profile.gender or "").lower().strip(),
+        ]
+        parts.extend(sorted((c or "").lower().strip() for c in (matched_criteria or [])))
+        return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
+
+    def _cached_explanation(self, profile: EntrepreneurProfile, scheme: Scheme,
+                            matched_criteria: list[str], language: str) -> Optional[str]:
+        try:
+            session = SessionLocal()
+            try:
+                row = (
+                    session.query(SchemeExplanation)
+                    .filter(
+                        SchemeExplanation.scheme_id == scheme.id,
+                        SchemeExplanation.language == language,
+                        SchemeExplanation.criteria_key == self.criteria_key(profile, matched_criteria),
+                    )
+                    .first()
+                )
+                return row.explanation if row and row.explanation else None
+            finally:
+                session.close()
+        except Exception:
+            return None
+
+    def _store_explanation(self, profile: EntrepreneurProfile, scheme: Scheme,
+                           matched_criteria: list[str], language: str, explanation: str) -> None:
+        try:
+            session = SessionLocal()
+            try:
+                key = self.criteria_key(profile, matched_criteria)
+                existing = (
+                    session.query(SchemeExplanation)
+                    .filter(
+                        SchemeExplanation.scheme_id == scheme.id,
+                        SchemeExplanation.language == language,
+                        SchemeExplanation.criteria_key == key,
+                    )
+                    .first()
+                )
+                if existing:
+                    existing.explanation = explanation
+                else:
+                    session.add(
+                        SchemeExplanation(
+                            scheme_id=scheme.id,
+                            language=language,
+                            criteria_key=key,
+                            explanation=explanation,
+                        )
+                    )
+                session.commit()
+            finally:
+                session.close()
+        except Exception:
+            pass
+
     def _fallback(self, profile: EntrepreneurProfile, scheme: Scheme, matched_criteria: list[str], language: str) -> str:
         joined = ", ".join(matched_criteria) if matched_criteria else "no specific matches yet"
         if language == "hi":
@@ -39,6 +103,9 @@ class AIExplanationService:
 
     def generate_explanation(self, profile: EntrepreneurProfile, scheme: Scheme,
                              matched_criteria: list[str], language: str = "en") -> str:
+        cached = self._cached_explanation(profile, scheme, matched_criteria, language)
+        if cached:
+            return cached
         if not self.enabled:
             return self._fallback(profile, scheme, matched_criteria, language)
         prompt = (
@@ -64,7 +131,10 @@ class AIExplanationService:
                     messages=[{"role": "user", "content": prompt}],
                 )
                 text = message.content[0].text
-            return text.strip() if text else self._fallback(profile, scheme, matched_criteria, language)
+            explanation = text.strip() if text else self._fallback(profile, scheme, matched_criteria, language)
+            if explanation:
+                self._store_explanation(profile, scheme, matched_criteria, language, explanation)
+            return explanation
         except Exception:
             return self._fallback(profile, scheme, matched_criteria, language)
 

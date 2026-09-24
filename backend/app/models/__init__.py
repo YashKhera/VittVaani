@@ -8,4 +8,4 @@ from app.models.requirement import Requirement
 from app.models.questionnaire_progress import QuestionnaireProgress
 from app.models.otp import OtpCode
 
-__all__ = ["User", "EntrepreneurProfile", "Scheme", "ChannelPartner", "Requirement", "SavedScheme", "QuestionnaireProgress", "OtpCode"]
+__all__ = ["User", "EntrepreneurProfile", "Scheme", "ChannelPartner", "Requirement", "SavedScheme", "QuestionnaireProgress", "OtpCode", "SchemeExplanation"]
