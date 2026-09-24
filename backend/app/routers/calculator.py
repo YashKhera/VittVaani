@@ -80,23 +80,64 @@ def calculate(payload: CalculatorRequest, _: User = Depends(get_current_user)):
 
 
 @router.get("/schemes")
-def scheme_defaults(_: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def scheme_defaults(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Compare-list schemes, personalized to the caller's eligibility.
+
+    When the user has a profile, items carry ``eligible`` + ``match_score``
+    computed with the same hard-eligibility rules as /api/recommendations
+    (gender/category/state/project-type/income filters), so e.g. a male user
+    never sees Mahila Samridhi Yojana pre-listed for comparison.
+    Without a profile every scheme is returned with eligible=False and
+    personalized=False so the UI can prompt profile completion.
+    """
+    from app.models.profile import EntrepreneurProfile
+    from app.services.matching_service import RecommendationService
+
     schemes = db.query(Scheme).filter(Scheme.loan_category.isnot(None)).all()
+
+    def _item(s: Scheme, eligible: bool, match_score: float | None) -> dict:
+        return {
+            "scheme_id": s.id,
+            "scheme_name": s.name,
+            "interest_rate": _scheme_rate(s),
+            "moratorium_months": _scheme_moratorium(s),
+            "coverage_percent": float(s.max_coverage_pct or 90.0),
+            "tenure_max_months": s.tenure_max_months,
+            "loan_min": s.loan_min,
+            "loan_max": s.loan_max,
+            "loan_category": s.loan_category,
+            "eligible": eligible,
+            "match_score": match_score,
+        }
+
+    profile = db.query(EntrepreneurProfile).filter(
+        EntrepreneurProfile.user_id == current_user.id
+    ).first()
+    if profile is None:
+        return {
+            "personalized": False,
+            "eligible_count": 0,
+            "total": len(schemes),
+            "items": [_item(s, False, None) for s in schemes],
+        }
+
+    result = RecommendationService(db).get_recommendations(
+        profile=profile, min_score=40, max_results=50
+    )
+    rec = {r["scheme_id"]: r for r in result["recommendations"]}
+    items = [_item(s, s.id in rec, rec[s.id]["match_score"] if s.id in rec else None)
+             for s in schemes]
+    # Eligible first (best match first), then the rest alphabetically.
+    items.sort(key=lambda i: (
+        0 if i["eligible"] else 1,
+        -(i["match_score"] or 0),
+        (i["scheme_name"] or "").lower(),
+    ))
     return {
-        "items": [
-            {
-                "scheme_id": s.id,
-                "scheme_name": s.name,
-                "interest_rate": _scheme_rate(s),
-                "moratorium_months": _scheme_moratorium(s),
-                "coverage_percent": float(s.max_coverage_pct or 90.0),
-                "tenure_max_months": s.tenure_max_months,
-                "loan_min": s.loan_min,
-                "loan_max": s.loan_max,
-                "loan_category": s.loan_category,
-            }
-            for s in schemes
-        ]
+        "personalized": True,
+        "eligible_count": sum(1 for i in items if i["eligible"]),
+        "total": len(items),
+        "items": items,
     }
 
 

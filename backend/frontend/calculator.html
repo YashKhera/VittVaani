@@ -142,12 +142,12 @@
           </div>
           <div class="note hidden" id="moraNote" data-i18n="calculator.notes.moratorium">Interest accrues during the moratorium and is added to the principal before repayment begins.</div>
           <div class="mt-4">
-            <h3 class="mb-2">Amortization</h3>
+            <h3 class="mb-2" data-i18n="calculator.amort.title">Amortization</h3>
             <div id="amortTableWrap" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius: var(--radius-md);">
             </div>
           </div>
         </div>
-        <div id="calcPlaceholder" class="text-muted" style="padding: var(--space-5) 0;">
+        <div id="calcPlaceholder" class="text-muted" style="padding: var(--space-5) 0;" data-i18n="calculator.placeholder">
           Adjust the sliders above and press Calculate.
         </div>
       </section>
@@ -156,7 +156,7 @@
     <section class="calc-card mt-5">
       <h2 data-i18n="calculator.compare.title">Compare schemes</h2>
       <p class="text-muted mb-3" data-i18n="calculator.compare.sub">Pick up to 5 schemes to compare their monthly instalment.</p>
-      <div class="compare-list" id="schemeList"><p class="text-muted p-3">Loading schemes…</p></div>
+      <div class="compare-list" id="schemeList"><p class="text-muted p-3" data-i18n="common.loading">Loading...</p></div>
       <div class="flex items-center gap-2 mb-3">
         <input type="range" id="cmpTenure" min="6" max="120" step="6" value="60" style="flex:1">
         <span class="text-sm text-muted" id="cmpTenureLabel">60 months</span>
@@ -166,12 +166,12 @@
         <table class="compare-table">
           <thead>
             <tr>
-              <th>Scheme</th>
-              <th>Rate (%)</th>
-              <th>Coverage (%)</th>
-              <th>Moratorium (mo)</th>
-              <th>EMI</th>
-              <th>Total interest</th>
+              <th data-i18n="calculator.col.scheme">Scheme</th>
+              <th data-i18n="calculator.col.rate">Rate (%)</th>
+              <th data-i18n="calculator.col.coverage">Coverage (%)</th>
+              <th data-i18n="calculator.col.moratorium">Moratorium (mo)</th>
+              <th data-i18n="calculator.col.emi">EMI</th>
+              <th data-i18n="calculator.col.interest">Total interest</th>
             </tr>
           </thead>
           <tbody id="compareBody"></tbody>

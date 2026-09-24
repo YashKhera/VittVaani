@@ -117,12 +117,20 @@
 
   function t(key) { return I18n.t(key); }
 
+  function humanize(key) {
+    // State names are proper nouns: prettify snake_case instead of showing
+    // a raw i18n key when no translation exists.
+    var pretty = String(key || "").replace(/_/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    var translated = t("states." + key);
+    return (translated && translated !== "states." + key) ? translated : pretty;
+  }
+
   function populateSelects() {
     var stateSel = el("stateSelect");
     if (stateSel) {
       var shtml = '<option value=""></option>';
       STATE_KEYS.forEach(function (k) {
-        shtml += '<option value="' + k + '">' + t("states." + k) + "</option>";
+        shtml += '<option value="' + k + '">' + esc(humanize(k)) + "</option>";
       });
       stateSel.innerHTML = shtml;
     }

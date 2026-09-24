@@ -47,7 +47,11 @@
 
   function amortizationTable(rows) {
     if (!rows || !rows.length) return "";
-    var thead = "<thead><tr><th>Mo</th><th>Opening</th><th>EMI</th><th>Interest</th><th>Principal</th><th>Closing</th></tr></thead>";
+    var thead = "<thead><tr><th>" + esc(I18n.t("calculator.amort.mo")) + "</th><th>" +
+      esc(I18n.t("calculator.amort.opening")) + "</th><th>" + esc(I18n.t("calculator.result.emi")) +
+      "</th><th>" + esc(I18n.t("calculator.result.interest")) + "</th><th>" +
+      esc(I18n.t("calculator.amort.principal")) + "</th><th>" + esc(I18n.t("calculator.amort.closing")) +
+      "</th></tr></thead>";
     var tbody = rows.map(function (r) {
       return "<tr>" +
         "<td>" + r.month + "</td>" +
@@ -97,12 +101,21 @@
     });
   }
 
+  var schemesMeta = { personalized: false, eligible_count: 0, showAll: false };
+
   function loadSchemes() {
     var list = document.getElementById("schemeList");
     if (schemesCache) { renderSchemeList(list, schemesCache); return Promise.resolve(schemesCache); }
     API.get("/api/calculator/schemes", Auth.token(), { skipAuthRedirect: true })
       .then(function (data) {
         schemesCache = data.items || [];
+        schemesMeta.personalized = !!data.personalized;
+        schemesMeta.eligible_count = data.eligible_count || 0;
+        // Deep-linked scheme (e.g. from scheme details) stays selectable
+        // even when it is not in the user's eligible set.
+        if (schemeParam && !schemesCache.some(function (s) { return String(s.scheme_id) === String(schemeParam); })) {
+          schemesCache = schemesCache.slice();
+        }
         renderSchemeList(list, schemesCache);
       })
       .catch(function (err) {
@@ -110,16 +123,46 @@
       });
   }
 
+  function compareItemHtml(s) {
+    var badge = (s.eligible && s.match_score !== null && s.match_score !== undefined)
+      ? ' <span class="chip ok">' + Math.round(s.match_score) + "% " + esc(I18n.t("calculator.compare.match")) + "</span>"
+      : "";
+    return '<label class="compare-item">' +
+      '<input type="checkbox" value="' + s.scheme_id + '"' +
+      (schemeParam && String(s.scheme_id) === String(schemeParam) ? " checked" : "") + "> " +
+      "<span>" + esc(s.scheme_name) + "</span>" + badge +
+      "<span class=\"text-sm text-muted\"> — " + s.interest_rate + "% · " + Math.round(s.coverage_percent) + "% " + esc(I18n.t("calculator.compare.coverageShort")) + "</span>" +
+      "</label>";
+  }
+
   function renderSchemeList(list, items) {
     if (!items.length) { list.innerHTML = '<p class="text-muted p-3">' + I18n.t("common.notFound") + "</p>"; return; }
-    list.innerHTML = items.map(function (s) {
-      return '<label class="compare-item">' +
-        '<input type="checkbox" value="' + s.scheme_id + '"' +
-        (schemeParam && String(s.scheme_id) === String(schemeParam) ? " checked" : "") + "> " +
-        "<span>" + esc(s.scheme_name) + "</span>" +
-        "<span class=\"text-sm text-muted\"> — " + s.interest_rate + "% · " + Math.round(s.coverage_percent) + "% cov." + "</span>" +
-        "</label>";
-    }).join("");
+    var eligible = items.filter(function (s) { return s.eligible; });
+    var rest = items.filter(function (s) { return !s.eligible; });
+    var html = "";
+    if (schemesMeta.personalized && eligible.length) {
+      html += '<p class="text-sm mt-2 mb-1" style="padding:0 var(--space-3)"><strong>' +
+        esc(I18n.t("calculator.compare.recommended", { count: eligible.length })) + "</strong></p>";
+      html += eligible.map(compareItemHtml).join("");
+    }
+    var showRest = !schemesMeta.personalized || schemesMeta.showAll || !eligible.length;
+    var restItems = (schemesMeta.personalized && eligible.length && !schemesMeta.showAll) ? [] : rest;
+    if (schemesMeta.personalized && eligible.length) {
+      html += '<div style="padding:var(--space-2) var(--space-3)"><button type="button" class="btn btn-ghost btn-sm" id="toggleAllSchemes">' +
+        esc(schemesMeta.showAll ? I18n.t("calculator.compare.showLess") : I18n.t("calculator.compare.showAll", { count: rest.length })) + "</button></div>";
+    }
+    if (!schemesMeta.personalized) {
+      html += '<p class="text-sm text-muted" style="padding:0 var(--space-3)">' + esc(I18n.t("calculator.compare.noProfile")) + "</p>";
+    }
+    if (showRest) html += restItems.map(compareItemHtml).join("");
+    // Eligible-only fast path: when personalized and eligible exist and "show all"
+    // is off, the list above already contains exactly the eligible set.
+    list.innerHTML = html;
+    var tog = document.getElementById("toggleAllSchemes");
+    if (tog) tog.addEventListener("click", function () {
+      schemesMeta.showAll = !schemesMeta.showAll;
+      renderSchemeList(list, schemesCache);
+    });
   }
 
   function selectedSchemeIds() {
@@ -132,7 +175,7 @@
   function compare() {
     var ids = selectedSchemeIds();
     if (!ids.length) { Notify.warning(I18n.t("common.required")); return; }
-    if (ids.length > 5) { Notify.warning("Max 5"); return; }
+    if (ids.length > 5) { Notify.warning(I18n.t("calculator.compare.max5")); return; }
     var btn = document.getElementById("compareBtn");
     btn.disabled = true;
     btn.textContent = I18n.t("calculator.loading");
@@ -168,19 +211,24 @@
 
     bindRange("costInput", "costOutput", fmtLakh);
     bindRange("rateInput", "rateOutput", function (v) { return v + "%"; });
-    bindRange("tenureInput", "tenureOutput", function (v) { return v + " mo"; });
+    bindRange("tenureInput", "tenureOutput", function (v) { return v + " " + I18n.t("calculator.unit.mo"); });
     bindRange("coverageInput", "coverageOutput", function (v) { return v + "%"; });
-    bindRange("moraInput", "moraOutput", function (v) { return v + " mo"; });
+    bindRange("moraInput", "moraOutput", function (v) { return v + " " + I18n.t("calculator.unit.mo"); });
     bindRange("subsidyInput", "subsidyOutput", fmtLakh);
     bindRange("upfrontInput", "upfrontOutput", fmtLakh);
     bindRange("cmpTenure", null, null);
 
     var cmpTenure = document.getElementById("cmpTenure");
     var cmpLabel = document.getElementById("cmpTenureLabel");
+    var cmpLabelText = function (v) { return v + " " + I18n.t("calculator.unit.months"); };
     cmpTenure.addEventListener("input", function () {
-      cmpLabel.textContent = this.value + " months";
+      cmpLabel.textContent = cmpLabelText(this.value);
     });
-    cmpLabel.textContent = cmpTenure.value + " months";
+    cmpLabel.textContent = cmpLabelText(cmpTenure.value);
+    window.addEventListener("languagechange", function () {
+      cmpLabel.textContent = cmpLabelText(cmpTenure.value);
+      if (schemesCache) renderSchemeList(document.getElementById("schemeList"), schemesCache);
+    });
 
     document.getElementById("calcBtn").addEventListener("click", calculate);
     document.getElementById("compareBtn").addEventListener("click", compare);
