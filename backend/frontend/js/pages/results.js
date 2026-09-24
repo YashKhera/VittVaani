@@ -16,7 +16,7 @@
 
   function loadSaved() {
     if (!Auth.isLoggedIn() || !Auth.token()) return Promise.resolve([]);
-    return API.get("/api/saved", Auth.token(), { skipAuthRedirect: true })
+    return API.get("/api/saved-schemes", Auth.token(), { skipAuthRedirect: true })
       .then(function (data) {
         savedIdsFromServer = (data.saved_schemes || data.schemes || []).map(function (s) {
           return s.scheme ? s.scheme.id : (s.id || s.scheme_id);

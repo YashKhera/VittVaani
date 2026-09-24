@@ -95,7 +95,7 @@
 
   function updateSaveState(id) {
     if (!Auth.isLoggedIn() || !Auth.token()) return Promise.resolve(false);
-    return API.get("/api/saved", Auth.token(), { skipAuthRedirect: true })
+    return API.get("/api/saved-schemes", Auth.token(), { skipAuthRedirect: true })
       .then(function (data) {
         var items = (data && (data.saved_schemes || data.schemes)) || [];
         isSaved = items.some(function (e) {
@@ -112,8 +112,8 @@
     if (!Auth.isLoggedIn()) { window.location.href = "/login"; return; }
     var id = scheme.id;
     var request = isSaved
-      ? API.del("/api/saved/" + encodeURIComponent(id), Auth.token())
-      : API.post("/api/saved/" + encodeURIComponent(id), {}, Auth.token());
+      ? API.del("/api/saved-schemes/" + encodeURIComponent(id), Auth.token())
+      : API.post("/api/saved-schemes/" + encodeURIComponent(id), {}, Auth.token());
     request.then(function () {
       isSaved = !isSaved;
       var btn = document.getElementById("saveBtn");

@@ -437,7 +437,7 @@
 
   function loadForm() {
     var token = Auth.token();
-    return API.post("/api/find-schemes/dynamic", { answers: answers }, token)
+    return API.post("/api/questionnaire/dynamic", { answers: answers }, token)
       .then(function (dyn) {
         buildSteps((dyn && dyn.questions) || []);
         if (step >= STEP_TOTAL) step = STEP_TOTAL - 1;
@@ -505,7 +505,7 @@
       if (cb) cb();
       return;
     }
-    API.put("/api/find-schemes/progress", { answers: answers, step: step }, Auth.token())
+    API.put("/api/questionnaire/progress", { answers: answers, step: step }, Auth.token())
       .then(function () { if (cb) cb(); })
       .catch(function () { if (cb) cb(); });
   }
@@ -1074,7 +1074,7 @@
       .then(function (p) { profile = p; })
       .catch(function () { profile = null; })
       .then(function () {
-        return API.get("/api/find-schemes/progress", token, { skipAuthRedirect: true });
+        return API.get("/api/questionnaire/progress", token, { skipAuthRedirect: true });
       })
       .then(function (prog) {
         answers = (prog && prog.answers && typeof prog.answers === "object") ? prog.answers : {};

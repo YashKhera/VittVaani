@@ -72,7 +72,7 @@
         btn.addEventListener("click", function () {
           var id = decodeURIComponent(btn.getAttribute("data-save-scheme"));
           if (btn.classList.contains("btn-primary")) {
-            API.del("/api/saved/" + encodeURIComponent(id), Auth.token())
+            API.del("/api/saved-schemes/" + encodeURIComponent(id), Auth.token())
               .then(function () {
                 btn.classList.remove("btn-primary"); btn.classList.add("btn-ghost");
                 btn.textContent = "☆ " + I18n.t("common.save");
@@ -81,7 +81,7 @@
               })
               .catch(function (e) { Notify.error(e.message); });
           } else {
-            API.post("/api/saved/" + encodeURIComponent(id), {}, Auth.token())
+            API.post("/api/saved-schemes/" + encodeURIComponent(id), {}, Auth.token())
               .then(function () {
                 btn.classList.remove("btn-ghost"); btn.classList.add("btn-primary");
                 btn.textContent = "★ " + I18n.t("common.saved");
@@ -95,7 +95,7 @@
       mount.querySelectorAll("[data-remove-scheme]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var id = decodeURIComponent(btn.getAttribute("data-remove-scheme"));
-          API.del("/api/saved/" + encodeURIComponent(id), Auth.token())
+          API.del("/api/saved-schemes/" + encodeURIComponent(id), Auth.token())
             .then(function () {
               btn.closest(".scheme-card").remove();
               Notify.success(I18n.t("saved.remove.toast"));

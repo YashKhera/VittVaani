@@ -6,7 +6,7 @@
 
   window.Auth = {
     register: function (email, password, name, phone) {
-      return API.post("/api/auth/signup", { email: email, password: password, name: name, phone_number: phone || "" });
+      return API.post("/api/auth/register", { email: email, password: password, name: name, phone_number: phone || "" });
     },
     login: function (email, password) {
       return API.post("/api/auth/login", { email: email, password: password }).then(function (data) {
