@@ -217,5 +217,49 @@ class TestPartnerEligible(PartnerApiTestCase):
         self.assertEqual(data["filters"]["max_npa"], 4.0)
 
 
+class TestPartnerSeedQuality(PartnerApiTestCase):
+    def test_no_stacked_coordinates(self):
+        from app.models.channel_partner import ChannelPartner
+        db = SessionLocal()
+        try:
+            coords = [(p.latitude, p.longitude)
+                      for p in db.query(ChannelPartner).all()]
+        finally:
+            db.close()
+        self.assertEqual(len(coords), len(set(coords)),
+                         "branches sharing exact coords stack on the map")
+
+    def test_seed_upserts_corrections(self):
+        from app.models.channel_partner import ChannelPartner
+        from data.partners_seed import build_partners, seed_partners
+        db = SessionLocal()
+        try:
+            first = build_partners()[0]
+            row = db.query(ChannelPartner).filter(
+                ChannelPartner.name == first["name"]).first()
+            self.assertIsNotNone(row)
+            row.latitude = 0.0
+            row.phone = "000-0000000"
+            db.commit()
+            seed_partners(db)
+            db.refresh(row)
+            self.assertAlmostEqual(row.latitude, first["latitude"])
+            self.assertEqual(row.phone, first["phone"])
+        finally:
+            db.close()
+
+    def test_curated_coords_inside_india(self):
+        from data.partners_seed import build_partners
+        for p in build_partners():
+            self.assertTrue(6.0 <= p["latitude"] <= 38.0, p["name"])
+            self.assertTrue(68.0 <= p["longitude"] <= 98.0, p["name"])
+
+    def test_variant_pincodes_match_base(self):
+        from data.partners_seed import PARTNERS, build_partners
+        base_pins = {r[5] for r in PARTNERS}
+        for p in build_partners():
+            self.assertIn(p["pincode"], base_pins)
+
+
 if __name__ == "__main__":
     unittest.main()

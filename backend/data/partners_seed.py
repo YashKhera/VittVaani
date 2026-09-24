@@ -163,13 +163,57 @@ def _mn_name(i, state):
     return f"{base} Microfinance – {state.replace('_', ' ').title()} {i % 3 + 1}"
 
 
+# Official websites for well-known institutions (only certain domains).
+_WEBSITES = [
+    ("State Bank of India", "https://sbi.co.in"),
+    ("Bank of India", "https://bankofindia.co.in"),
+    ("Bank of Baroda", "https://bankofbaroda.in"),
+    ("Union Bank of India", "https://unionbankofindia.co.in"),
+    ("Punjab National Bank", "https://pnbindia.in"),
+    ("Canara Bank", "https://canarabank.com"),
+    ("UCO Bank", "https://ucobank.com"),
+    ("Indian Overseas Bank", "https://iob.in"),
+    ("National SC Finance", "https://nsfdc.nic.in"),
+    ("NSFDC", "https://nsfdc.nic.in"),
+    ("Small Industries Dev Bank of India", "https://sidbi.in"),
+    ("Vidya Lakshmi", "https://vidyalakshmi.co.in"),
+]
+
+
+def _website_for(name: str) -> str | None:
+    for key, url in _WEBSITES:
+        if key.lower() in name.lower():
+            return url
+    return None
+
+
+def _spread_coords(lat: float, lng: float, seen: dict) -> tuple[float, float]:
+    """Nudge stacked pins apart so same-city branches resolve distinctly.
+
+    Deterministic spiral in ~150m steps; keeps every branch within ~1km of
+    its true point so directions stay honest.
+    """
+    key = (round(lat, 4), round(lng, 4))
+    n = seen.get(key, 0)
+    seen[key] = n + 1
+    if n == 0:
+        return round(lat, 4), round(lng, 4)
+    step = 0.0015 * ((n - 1) // 8 + 1)
+    angle = ((n - 1) % 8) * (3.14159 / 4)
+    import math as _math
+    return (round(lat + step * _math.cos(angle), 4),
+            round(lng + step * _math.sin(angle), 4))
+
+
 def build_partners() -> list[dict]:
     out = []
     seed = random.Random(42)
+    seen: dict = {}
 
     for idx, row in enumerate(PARTNERS):
         (name, ptype, state, city, district, pincode, lat, lng,
          loan_categories, util, npa, overdue, phone) = row
+        lat, lng = _spread_coords(lat, lng, seen)
         out.append({
             "name": name,
             "partner_type": ptype,
@@ -185,8 +229,8 @@ def build_partners() -> list[dict]:
             "overdue_pct": overdue,
             "phone": phone,
             "address": f"{city} District, {state.replace('_', ' ').title()}",
-            "website": None,
-            "official_url": None,
+            "website": _website_for(name),
+            "official_url": _website_for(name),
         })
 
     # Add generated branches so catalog exceeds 100 partners
@@ -203,9 +247,10 @@ def build_partners() -> list[dict]:
         ptype = _PARTNER_TYPES[extra % len(_PARTNER_TYPES)]
         city = base[3]
         district = base[4]
-        pincode = str(100000 + (extra * 7919) % 900000)
-        lat = round(base[6] + (seed.uniform(-0.15, 0.15)), 4)
-        lng = round(base[7] + (seed.uniform(-0.15, 0.15)), 4)
+        pincode = base[5]
+        lat = round(base[6] + (seed.uniform(-0.02, 0.02)), 4)
+        lng = round(base[7] + (seed.uniform(-0.02, 0.02)), 4)
+        lat, lng = _spread_coords(lat, lng, seen)
         is_sca = ptype == "sca"
         cats = ["micro_finance", "term_loan"] if not is_sca else ["micro_finance", "term_loan", "education"]
         name = _mn_name(extra, state) if ptype == "nbfc_mfi" else (
@@ -235,16 +280,32 @@ def build_partners() -> list[dict]:
     return out
 
 
+_MUTABLE_FIELDS = (
+    "partner_type", "state", "city", "district", "pincode",
+    "latitude", "longitude", "loan_categories", "fund_utilization_pct",
+    "npa_pct", "overdue_pct", "phone", "address", "website", "official_url",
+)
+
+
 def seed_partners(db) -> int:
+    """Insert missing partners; UPDATE existing rows by name (upsert).
+
+    Upsert matters because coordinate/contact corrections must reach
+    databases seeded earlier (e.g. production) on the next seed run.
+    Returns the number of inserted rows.
+    """
     from app.models.channel_partner import ChannelPartner
 
-    existing = {p.name for p in db.query(ChannelPartner).all()}
+    existing = {p.name: p for p in db.query(ChannelPartner).all()}
     count = 0
     for data in build_partners():
-        if data["name"] in existing:
+        row = existing.get(data["name"])
+        if row is None:
+            db.add(ChannelPartner(**data))
+            count += 1
             continue
-        db.add(ChannelPartner(**data))
-        count += 1
+        for field in _MUTABLE_FIELDS:
+            setattr(row, field, data[field])
     db.commit()
     return count
 

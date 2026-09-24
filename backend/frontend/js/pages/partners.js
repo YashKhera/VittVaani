@@ -82,8 +82,32 @@
     return "https://www.google.com/maps/dir/?api=1&destination=" + p.latitude + "," + p.longitude;
   }
 
+  var TYPE_LABEL = { sca: "partners.type.sca", psb: "partners.type.psb", rrb: "partners.type.rrb", nbfc_mfi: "partners.type.nbfc" };
+
+  function typeLabel(code) {
+    var key = TYPE_LABEL[code];
+    if (key) {
+      var s = t(key);
+      if (s && s !== key) return s;
+    }
+    return humanize(code);
+  }
+
+  function locLabel(p) {
+    // Friendly "City, District, State, PIN" — never a raw state key.
+    return [p.city, p.district, humanize(p.state), p.pincode].filter(Boolean).join(", ");
+  }
+
+  function contactActions(p) {
+    var tel = p.phone ? String(p.phone).replace(/[^+\d]/g, "") : "";
+    return (p.phone ? '<a class="btn btn-secondary btn-sm" href="tel:' + esc(tel || p.phone) + '">' + I18n.t("partners.call") + "</a>" : "") +
+      (p.email ? '<a class="btn btn-ghost btn-sm" href="mailto:' + esc(p.email) + '">' + I18n.t("partners.email") + "</a>" : "") +
+      '<a class="btn btn-ghost btn-sm" href="' + directionsUrl(p) + '" target="_blank" rel="noopener">' + I18n.t("partners.directions") + "</a>" +
+      (p.website ? '<a class="btn btn-ghost btn-sm" href="' + esc(p.website) + '" target="_blank" rel="noopener">' + I18n.t("partners.website") + "</a>" : "");
+  }
+
   function partnerCard(p, idx) {
-    var meta = [p.name + " (" + esc(p.partner_type) + ")"];
+    var meta = [typeLabel(p.partner_type)];
     if (p.distance_km !== null && p.distance_km !== undefined) {
       meta.push('<span class="distance-tag">' + fmtKm(p.distance_km) + "</span>");
     }
@@ -92,11 +116,10 @@
       chip(I18n.t("partners.npa"), healthClass(p) === "bad" ? "bad" : "warn", fmtPct(p.npa_pct)) +
       chip(I18n.t("partners.overdue"), healthClass(p) === "bad" ? "bad" : "warn", fmtPct(p.overdue_pct));
 
-    var loc = [p.state, p.city, p.district, p.pincode].filter(Boolean).join(", ");
-    var actions =
-      (p.phone ? '<a class="btn btn-secondary btn-sm" href="tel:' + esc(p.phone) + '">' + I18n.t("partners.call") + "</a>" : "") +
-      '<a class="btn btn-ghost btn-sm" href="' + directionsUrl(p) + '" target="_blank" rel="noopener">' + I18n.t("partners.directions") + "</a>" +
-      (p.website ? '<a class="btn btn-ghost btn-sm" href="' + esc(p.website) + '" target="_blank" rel="noopener">' + I18n.t("partners.website") + "</a>" : "");
+    var loc = locLabel(p);
+    var contact = (p.phone ? '<div class="text-muted" style="font-size:var(--font-size-sm)">☎ ' + esc(p.phone) + "</div>" : "") +
+      (p.address && p.address !== loc ? '<div class="text-muted" style="font-size:var(--font-size-sm)">' + esc(p.address) + "</div>" : "");
+    var actions = contactActions(p);
 
     return '<article class="partner-card" data-id="' + p.id + '">' +
       '<div class="rank">' + (idx + 1) + "</div>" +
@@ -104,6 +127,7 @@
       "<h3>" + esc(p.name) + "</h3>" +
       '<div class="meta">' + meta.join(" · ") + "</div>" +
       (loc ? '<div class="text-muted" style="font-size:var(--font-size-sm)">' + esc(loc) + "</div>" : "") +
+      contact +
       '<div class="stats mt-2">' + stats + "</div>" +
       '<div class="actions mt-2">' + actions + "</div>" +
       "</div></article>";
@@ -339,26 +363,96 @@
     return qp;
   }
 
+  var TYPE_SUGGEST = {
+    micro_finance: { types: ["nbfc_mfi", "sca"], reason: "partners.recommend.micro" },
+    term_loan: { types: ["psb", "rrb", "sca"], reason: "partners.recommend.term" },
+    education: { types: ["psb"], reason: "partners.recommend.education" }
+  };
+  var suggestedType = "";
+
+  function showTypeBanner(cat) {
+    var sug = TYPE_SUGGEST[cat];
+    var banner = el("typeBanner");
+    if (!sug || !banner) return;
+    suggestedType = sug.types[0] || "";
+    var nameEl = el("typeBannerName");
+    var whyEl = el("typeBannerWhy");
+    if (nameEl) nameEl.textContent = typeLabel(suggestedType);
+    if (whyEl) whyEl.textContent = t(sug.reason);
+    banner.classList.remove("hidden");
+  }
+
+  function profileLocationQuery(prof) {
+    var parts = [];
+    if (prof.district) parts.push(prof.district);
+    if (prof.state) parts.push(humanize(prof.state));
+    if (!parts.length) return null;
+    parts.push("India");
+    return parts.join(", ");
+  }
+
+  function eligibleFallback(qp) {
+    // No location yet: show eligible partners for the loan category,
+    // scoped to the user's state when known.
+    var path = "/api/partners/eligible?limit=50" +
+      (qp.loan_category ? "&loan_category=" + encodeURIComponent(qp.loan_category) : "") +
+      (qp.state ? "&state=" + encodeURIComponent(qp.state) : "");
+    setBusy(true);
+    API.get(path, AuthNS.token()).then(function (d) {
+      render(d.partners || [], d, { lat: null, lon: null });
+    }).catch(function (err) {
+      var list = el("partnerList");
+      if (list) list.innerHTML = '<p class="text-muted p-3">' + esc(err.message) + "</p>";
+    }).finally(function () { setBusy(false); });
+  }
+
   function autoRunFromQuery(qp) {
     if (qp.lat && qp.lon) {
       run({ lat: parseFloat(qp.lat), lon: parseFloat(qp.lon), partner_type: "", loan_category: qp.loan_category || "" });
-    } else if (qp.pincode) {
-      run({ lat: undefined, lon: undefined });
-    } else if (located) {
-      run({ lat: located.lat, lon: located.lon, loan_category: qp.loan_category || "" });
-    } else {
-      // No location yet: show eligible partners for the scheme's loan category.
-      var path = "/api/partners/eligible?limit=50" +
-        (qp.loan_category ? "&loan_category=" + encodeURIComponent(qp.loan_category) : "") +
-        (qp.state ? "&state=" + encodeURIComponent(qp.state) : "");
-      setBusy(true);
-      API.get(path, AuthNS.token()).then(function (d) {
-        render(d.partners || [], d, { lat: null, lon: null });
-      }).catch(function (err) {
-        var list = el("partnerList");
-        if (list) list.innerHTML = '<p class="text-muted p-3">' + esc(err.message) + "</p>";
-      }).finally(function () { setBusy(false); });
+      return;
     }
+    if (qp.pincode) {
+      run({ lat: undefined, lon: undefined });
+      return;
+    }
+    if (located) {
+      run({ lat: located.lat, lon: located.lon, loan_category: qp.loan_category || "" });
+      return;
+    }
+    // Profile-aware: geocode the user's own district/state so a scheme's
+    // partners load nearest to THEM, not the whole country (Bug 4).
+    API.get("/api/profile", AuthNS.token(), { skipAuthRedirect: true }).then(function (prof) {
+      var where = profileLocationQuery(prof || {});
+      if (!where) throw new Error("no profile location");
+      if (prof.state) qp.state = qp.state || prof.state;
+      return geocodePlace("q=" + encodeURIComponent(where)).then(function (g) {
+        located = { lat: g.lat, lon: g.lon };
+        showStatus(t("partners.located") + " " + g.lat.toFixed(3) + ", " + g.lon.toFixed(3));
+        run({ lat: g.lat, lon: g.lon, loan_category: qp.loan_category || "" });
+      });
+    }).catch(function () { eligibleFallback(qp); });
+  }
+
+  function bootFromProfile() {
+    // First visit, no deep-link: prefill state + recommend the partner type
+    // that fits the user's ideal loan, then locate nearest automatically.
+    API.get("/api/profile", AuthNS.token(), { skipAuthRedirect: true }).then(function (prof) {
+      if (!prof) { autoRunFromQuery({}); return; }
+      if (prof.state) {
+        var st = el("stateSelect");
+        if (st) {
+          var has = Array.prototype.some.call(st.options, function (o) { return o.value === prof.state; });
+          if (has) st.value = prof.state;
+        }
+      }
+      var cat = prof.ideal_loan_category || "";
+      if (cat) {
+        var sel = el("schemeInput");
+        if (sel) sel.value = cat;
+        showTypeBanner(cat);
+      }
+      autoRunFromQuery({ loan_category: cat });
+    }).catch(function () {});
   }
 
   function render(items, d, q) {
@@ -420,7 +514,9 @@
       var icon = healthIcon(healthClass(p));
       var popup =
         '<div class="popup-name">' + esc(p.name) + "</div>" +
-        '<div class="popup-meta">' + esc([p.city, p.state].filter(Boolean).join(", ")) + "</div>" +
+        '<div class="popup-meta">' + esc(typeLabel(p.partner_type)) + "</div>" +
+        '<div class="popup-meta">' + esc(locLabel(p)) + "</div>" +
+        (p.phone ? '<div class="popup-meta">☎ ' + esc(p.phone) + "</div>" : "") +
         (p.distance_km !== null && p.distance_km !== undefined ? '<div class="popup-meta">' + fmtKm(p.distance_km) + "</div>" : "") +
         '<div class="popup-meta">' + I18n.t("partners.utilization") + ": " + fmtPct(p.fund_utilization_pct) + "</div>" +
         '<div class="popup-meta">' + I18n.t("partners.npa") + ": " + fmtPct(p.npa_pct) + "</div>" +
@@ -466,10 +562,25 @@
         window.history.replaceState({}, "", url.toString());
       } catch (e) {}
     });
+    bind("typeBannerApply", function () {
+      if (!suggestedType) return;
+      var sel = el("typeSelect");
+      if (sel) sel.value = suggestedType;
+      if (located) {
+        var catSel = el("schemeInput");
+        run({ lat: located.lat, lon: located.lon,
+          partner_type: suggestedType,
+          loan_category: (catSel && catSel.value) || "" });
+      } else {
+        run({ lat: undefined, lon: undefined });
+      }
+    });
     var qp = applySchemeContext();
     // Deep-link without scheme id (e.g. ?pincode=440012 or ?lat=&lon=) still auto-runs.
     if (qp && !qp.scheme && (qp.pincode || (qp.lat && qp.lon))) {
       autoRunFromQuery(qp);
+    } else if (qp && !qp.scheme) {
+      bootFromProfile();
     }
   }
 
