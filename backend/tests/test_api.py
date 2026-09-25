@@ -149,7 +149,7 @@ class TestAuth(ApiTestCase):
     def test_captured_otp(self):
         captured = {}
 
-        def fake_deliver(self, user, otp):
+        def fake_deliver(self, user, otp, purpose="password_reset", language="en"):
             captured["otp"] = otp
 
         with mock.patch.object(AuthService, "_deliver_otp", fake_deliver):
@@ -163,7 +163,7 @@ class TestAuth(ApiTestCase):
         self._register("otp_flow@example.com")
         captured = {}
 
-        def fake_deliver(self, user, otp):
+        def fake_deliver(self, user, otp, purpose="password_reset", language="en"):
             captured["otp"] = otp
 
         with mock.patch.object(AuthService, "_deliver_otp", fake_deliver):
@@ -184,7 +184,7 @@ class TestAuth(ApiTestCase):
         self._register("wrong_otp@example.com")
         captured = {}
 
-        def fake_deliver(self, user, otp):
+        def fake_deliver(self, user, otp, purpose="password_reset", language="en"):
             captured["otp"] = otp
 
         with mock.patch.object(AuthService, "_deliver_otp", fake_deliver):

@@ -19,6 +19,21 @@
         return data;
       });
     },
+    requestLoginOtp: function (email) {
+      var lang = (window.I18n && I18n.current) ? I18n.current() : "en";
+      return API.post("/api/auth/otp/request", { email: email, language: lang });
+    },
+    loginWithOtp: function (email, otp) {
+      return API.post("/api/auth/otp/login", { email: email, otp: otp }).then(function (data) {
+        if (data && data.access_token) {
+          VStore.set(TOKEN_KEY, data.access_token);
+        }
+        if (data && data.user) {
+          VStore.set(USER_KEY, data.user);
+        }
+        return data;
+      });
+    },
     logout: function () {
       VStore.remove(TOKEN_KEY);
       VStore.remove(USER_KEY);

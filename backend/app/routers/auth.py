@@ -32,7 +32,7 @@ def me(current_user: User = Depends(get_current_user)):
 
 @router.post("/forgot-password")
 def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    return AuthService(db).forgot_password(payload.email)
+    return AuthService(db).forgot_password(payload.email, payload.language)
 
 
 @router.post("/verify-otp")
@@ -43,3 +43,14 @@ def verify_otp(payload: VerifyOtpRequest, db: Session = Depends(get_db)):
 @router.post("/reset-password")
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     return AuthService(db).reset_password(payload.token, payload.new_password)
+
+
+@router.post("/otp/request")
+def request_login_otp(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    return AuthService(db).request_login_otp(payload.email, payload.language)
+
+
+@router.post("/otp/login", response_model=TokenResponse)
+def login_with_otp(payload: VerifyOtpRequest, db: Session = Depends(get_db)):
+    result = AuthService(db).verify_login_otp(payload.email, payload.otp)
+    return {"access_token": result["access_token"], "token_type": "bearer", "user": result.get("user")}

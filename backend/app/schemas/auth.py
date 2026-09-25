@@ -32,6 +32,7 @@ class TokenResponse(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
+    language: str | None = "en"
 
 
 class VerifyOtpRequest(BaseModel):

@@ -59,6 +59,22 @@
         </div>
 
         <div id="formError" class="form-error hidden"></div>
+        <div id="formNote" class="form-note hidden"></div>
+
+        <div class="flex gap-2 mb-4" role="tablist" aria-label="Login method">
+          <button type="button" id="tabPassword" class="btn btn-secondary btn-sm flex-1" data-i18n="auth.login.method.password">Password</button>
+          <button type="button" id="tabOtp" class="btn btn-ghost btn-sm flex-1" data-i18n="auth.login.method.otp">OTP code</button>
+        </div>
+
+        <form id="otpForm" class="hidden" novalidate>
+          <p class="text-muted text-sm mb-3" data-i18n="auth.otp.login.hint">No password needed — we'll email you a 6-digit code.</p>
+          <div class="form-group">
+            <label for="otpCode" data-i18n="auth.otp.label">Enter the 6-digit code</label>
+            <input type="text" id="otpCode" name="otpCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••">
+          </div>
+          <button type="button" class="btn btn-ghost btn-block mb-3" id="sendOtpBtn" data-i18n="auth.otp.send">Send code</button>
+          <button type="submit" class="btn btn-primary btn-block mb-3" data-i18n="auth.otp.verifyLogin">Verify &amp; log in</button>
+        </form>
 
         <form id="loginForm" novalidate>
           <div class="form-group">

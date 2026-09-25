@@ -63,47 +63,70 @@ class AuthService:
         digits = "".join(ch for ch in str(phone or "") if ch.isdigit())
         return digits[-10:] if digits else ""
 
-    def _deliver_otp(self, user: User, otp: str) -> None:
-        subject = "Your VittVaani password reset OTP"
-        body = (
-            f"Hello,\n\n"
-            f"Use this one-time code to reset your password:\n\n"
-            f"    {otp}\n\n"
-            f"This code expires in {OTP_EXPIRE_MINUTES} minutes.\n"
-            f"If you didn't request this, you can safely ignore this email.\n\n"
-            f"- VittVaani Team"
-        )
-        delivered = send_email(user.email, subject, body)
-        print(f"[OTP] For {user.email}: code {otp} -> email delivery {'OK' if delivered else 'SKIPPED (SMTP not configured)'}")
+    @staticmethod
+    def _resolve_language(explicit: str | None, user: User) -> str:
+        # Explicit request language wins, then the user's saved profile preference.
+        # Only Hindi has a full template today; everything else falls back to English.
+        profile = getattr(user, "profile", None)
+        for candidate in (explicit, getattr(profile, "language_preference", None)):
+            if candidate and str(candidate).lower().startswith("hi"):
+                return "hi"
+        return "en"
 
-    def forgot_password(self, email: str) -> dict:
-        user = self.db.query(User).filter(User.email == email.lower()).first()
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    def _deliver_otp(self, user: User, otp: str, purpose: str = "password_reset", language: str = "en") -> None:
+        lang = self._resolve_language(language, user)
+        if lang == "hi":
+            if purpose == "login":
+                subject = "आपका VittVaani लॉगिन कोड"
+                action = "VittVaani में लॉग इन करें"
+            else:
+                subject = "आपका VittVaani पासवर्ड रीसेट OTP"
+                action = "अपना पासवर्ड रीसेट करें"
+            body = (
+                f"नमस्ते,\n\n"
+                f"{action} के लिए इस वन-टाइम कोड का उपयोग करें:\n\n"
+                f"    {otp}\n\n"
+                f"यह कोड {OTP_EXPIRE_MINUTES} मिनट में समाप्त हो जाएगा।\n"
+                f"यदि आपने यह अनुरोध नहीं किया था, तो इस ईमेल को अनदेखा करें।\n\n"
+                f"- VittVaani टीम"
+            )
+        else:
+            if purpose == "login":
+                subject = "Your VittVaani login code"
+                action = "log in to VittVaani"
+            else:
+                subject = "Your VittVaani password reset OTP"
+                action = "reset your password"
+            body = (
+                f"Hello,\n\n"
+                f"Use this one-time code to {action}:\n\n"
+                f"    {otp}\n\n"
+                f"This code expires in {OTP_EXPIRE_MINUTES} minutes.\n"
+                f"If you didn't request this, you can safely ignore this email.\n\n"
+                f"- VittVaani Team"
+            )
+        delivered = send_email(user.email, subject, body)
+        print(f"[OTP:{purpose}:{lang}] For {user.email}: code {otp} -> email delivery {'OK' if delivered else 'SKIPPED (SMTP not configured)'}")
+
+    def _issue_otp(self, user: User, purpose: str, language: str = "en") -> str:
         self.db.query(OtpCode).filter(
-            OtpCode.email == user.email, OtpCode.purpose == "password_reset"
+            OtpCode.email == user.email, OtpCode.purpose == purpose
         ).delete()
         self.db.commit()
 
         otp = f"{secrets.randbelow(1000000):06d}"
-        new_code = OtpCode(
+        self.db.add(OtpCode(
             email=user.email,
             code_hash=_hash_otp(otp),
-            purpose="password_reset",
+            purpose=purpose,
             created_at=datetime.utcnow(),
             expires_at=datetime.utcnow() + timedelta(minutes=OTP_EXPIRE_MINUTES),
-        )
-        self.db.add(new_code)
+        ))
         self.db.commit()
-        self._deliver_otp(user, otp)
+        self._deliver_otp(user, otp, purpose, language)
+        return otp
 
-        result = {
-            "message": f"An OTP has been sent to your registered email (valid for {OTP_EXPIRE_MINUTES} minutes)",
-            "expires_in_minutes": OTP_EXPIRE_MINUTES,
-        }
-        return result
-
-    def verify_otp(self, email: str, otp: str) -> dict:
+    def _check_otp(self, email: str, otp: str, purpose: str) -> tuple[User, OtpCode]:
         normalized_email = email.lower()
         user = self.db.query(User).filter(User.email == normalized_email).first()
         if not user:
@@ -112,7 +135,7 @@ class AuthService:
             self.db.query(OtpCode)
             .filter(
                 OtpCode.email == normalized_email,
-                OtpCode.purpose == "password_reset",
+                OtpCode.purpose == purpose,
                 OtpCode.used.is_(False),
             )
             .order_by(OtpCode.id.desc())
@@ -129,11 +152,46 @@ class AuthService:
             code.attempts += 1
             self.db.commit()
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid OTP. Please try again")
+        return user, code
 
+    def forgot_password(self, email: str, language: str | None = "en") -> dict:
+        user = self.db.query(User).filter(User.email == email.lower()).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        self._issue_otp(user, "password_reset", language or "en")
+
+        result = {
+            "message": f"An OTP has been sent to your registered email (valid for {OTP_EXPIRE_MINUTES} minutes)",
+            "expires_in_minutes": OTP_EXPIRE_MINUTES,
+        }
+        return result
+
+    def verify_otp(self, email: str, otp: str) -> dict:
+        user, code = self._check_otp(email, otp, "password_reset")
         code.used = True
         self.db.commit()
         reset_token = create_access_token(user.id, expires_delta=timedelta(minutes=15), token_type="reset")
         return {"reset_token": reset_token, "message": "OTP verified. You can now set a new password"}
+
+    def request_login_otp(self, email: str, language: str | None = "en") -> dict:
+        """Passwordless login step 1: email a single-use login code."""
+        user = self.db.query(User).filter(User.email == email.lower()).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        self._issue_otp(user, "login", language or "en")
+        return {
+            "message": f"A login code has been sent to your email (valid for {OTP_EXPIRE_MINUTES} minutes)",
+            "expires_in_minutes": OTP_EXPIRE_MINUTES,
+        }
+
+    def verify_login_otp(self, email: str, otp: str) -> dict:
+        """Passwordless login step 2: exchange the code for an access token."""
+        user, code = self._check_otp(email, otp, "login")
+        code.used = True
+        user.last_login = datetime.utcnow()
+        self.db.commit()
+        token = create_access_token(user.id)
+        return {"access_token": token, "token_type": "bearer", "user": _to_user_dict(user)}
 
     def reset_password(self, token: str, new_password: str) -> dict:
         payload = decode_token(token)

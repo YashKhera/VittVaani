@@ -43,7 +43,8 @@
       if (!Validation.email(email)) { showError(I18n.t("auth.email.invalid")); return; }
       var btn = emailForm.querySelector('button[type="submit"]');
       setBtn(btn, I18n.t("common.loading"), true);
-      API.post("/api/auth/forgot-password", { email: email })
+      var lang = (window.I18n && I18n.current) ? I18n.current() : "en";
+      API.post("/api/auth/forgot-password", { email: email, language: lang })
         .then(function () {
           currentEmail = email;
           setBtn(btn, I18n.t("auth.otp.sendBtn"), false);
