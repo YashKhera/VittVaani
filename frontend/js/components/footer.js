@@ -9,7 +9,7 @@
         '<footer class="footer no-print">' +
         '<div class="container">' +
         '<p class="mb-2" data-i18n="footer.about">' + I18n.t("footer.about") + "</p>" +
-        '<p class="text-sm mb-0">&copy; ' + new Date().getFullYear() + " VittVaani. <span data-i18n=\"footer.rights\">" + I18n.t("footer.rights") + "</span></p>" +
+        '<p class="text-sm mb-0">&copy; ' + new Date().getFullYear() + " VittVanni. <span data-i18n=\"footer.rights\">" + I18n.t("footer.rights") + "</span></p>" +
         "</div></footer>";
       I18n.apply();
     }

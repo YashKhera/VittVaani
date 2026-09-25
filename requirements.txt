@@ -1,4 +1,4 @@
-# Python dependencies for the VittVaani backend (Python 3.10+).
+# Python dependencies for the VittVanni backend (Python 3.10+).
 # Installed by Vercel for the serverless function in api/index.py.
 # The frontend needs no packages - pure static HTML/CSS/JS.
 

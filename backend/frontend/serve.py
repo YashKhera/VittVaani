@@ -95,7 +95,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 def main():
     server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    print("VittVaani frontend running at http://127.0.0.1:%d" % PORT)
+    print("VittVanni frontend running at http://127.0.0.1:%d" % PORT)
     print("Backend expected at http://127.0.0.1:8001  (see js/api.js)")
     try:
         server.serve_forever()

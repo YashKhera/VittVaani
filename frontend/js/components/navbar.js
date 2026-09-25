@@ -34,7 +34,7 @@
 
       header.innerHTML =
         '<div class="navbar-inner container">' +
-        '<a class="navbar-brand" href="/home"><img src="/assets/logo.svg" alt="VittVaani logo" aria-hidden="true"/><span data-i18n="app.name">' + I18n.t("app.name") + "</span></a>" +
+        '<a class="navbar-brand" href="/home"><img src="/assets/logo.svg" alt="VittVanni logo" aria-hidden="true"/><span data-i18n="app.name">' + I18n.t("app.name") + "</span></a>" +
         '<nav class="navbar-links" aria-label="Primary">' + links + "</nav>" +
         '<div class="navbar-actions">' +
         '<button class="icon-btn" id="themeToggle" aria-label="Toggle theme">' + (Theme.current() === "dark" ? "☀️" : "🌙") + "</button>" +

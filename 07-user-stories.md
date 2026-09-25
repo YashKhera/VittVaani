@@ -1,6 +1,6 @@
 # 07 · User Stories
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 Each story follows the format `As a <role>, I want <capability>, so that <value>`.
 Acceptance criteria are concrete and testable.

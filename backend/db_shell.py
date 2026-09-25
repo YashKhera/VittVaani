@@ -34,7 +34,7 @@ print(f"Connected to: {DATABASE_URL.split('@')[-1]}")
 print("Type SQL commands, or 'exit' to quit.\n")
 
 while True:
-    query = input("vittvaani> ").strip()
+    query = input("vittvanni> ").strip()
     if query.lower() in ("exit", "quit"):
         break
     if not query:

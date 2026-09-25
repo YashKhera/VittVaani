@@ -1,4 +1,4 @@
-"""Seed catalog for VittVaani v2 - schemes (central + state)."""
+"""Seed catalog for VittVanni v2 - schemes (central + state)."""
 
 import os
 import sys

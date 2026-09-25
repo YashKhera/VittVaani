@@ -1,7 +1,7 @@
 # 06 · Database Schema
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
-**Engine:** SQLite (dev, `vittvaani.db`) ⇄ PostgreSQL (prod)
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Engine:** SQLite (dev, `vittvanni.db`) ⇄ PostgreSQL (prod)
 
 ORM models live in `backend/app/models/*`.
 

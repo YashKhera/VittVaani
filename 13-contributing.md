@@ -1,6 +1,6 @@
 # 13 · Contributing & Workflow
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 ---
 
@@ -10,7 +10,7 @@ The repository is split into two independent folders so backend and frontend
 teams work in isolation:
 
 ```
-VittVaani/
+VittVanni/
 ├── backend/    # FastAPI + SQLAlchemy + SQLite (backend team)
 ├── frontend/   # static HTML/CSS/JS (frontend team)
 └── docs/       # THIS documentation kit (shared)

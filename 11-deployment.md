@@ -1,6 +1,6 @@
 # 11 · Deployment & Setup Runbook
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 ---
 

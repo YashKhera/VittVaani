@@ -1,21 +1,21 @@
 # 01 · Product Requirements Document (PRD)
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
-**Team:** VittVaani · **Event:** Smart India Hackathon 2026
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Team:** VittVanni · **Event:** Smart India Hackathon 2026
 **Status:** v1.0 (Approved)
 
 ---
 
 ## 1. Product Summary
 
-VittVaani is a web application that helps marginalized Indian entrepreneurs
+VittVanni is a web application that helps marginalized Indian entrepreneurs
 (women, SC/ST/OBC, PwD, rural micro-entrepreneurs) discover and apply for the
 government schemes they are actually eligible for. Instead of forcing users to
-search through scattered government websites and PDFs, VittVaani asks a short,
+search through scattered government websites and PDFs, VittVanni asks a short,
 adaptive questionnaire and returns a ranked list of schemes personalized to the
 user's profile, business, location, and needs.
 
-> VittVaani helps bridge the information gap between
+> VittVanni helps bridge the information gap between
 > government schemes and the entrepreneurs who qualify for them.
 
 ## 2. Problem Statement

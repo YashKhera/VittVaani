@@ -1,6 +1,6 @@
 # 08 · Design System
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 Frontend is a static site with a small design-token system. No frameworks, no
 build step. All CSS lives in `frontend/css/`.

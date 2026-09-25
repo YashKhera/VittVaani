@@ -1,6 +1,6 @@
 window.Translations = {
   en: {
-    "app.name": "VittVaani",
+    "app.name": "VittVanni",
     "app.tagline": "Sarkari yojana, smarter.",
     "nav.home": "Home",
     "nav.questions": "Questionnaire",
@@ -84,7 +84,7 @@ window.Translations = {
     "landing.hero.badge": "100% free & confidential",
     "landing.hero.h1": "Find the right government schemes for your",
     "landing.hero.h1.accent": "business",
-    "landing.hero.sub": "VittVaani matches India's central & state government schemes to your unique profile — in your preferred language, step by step.",
+    "landing.hero.sub": "VittVanni matches India's central & state government schemes to your unique profile — in your preferred language, step by step.",
     "landing.hero.cta": "Start Matching",
     "landing.hero.cta2": "How it works",
     "landing.how.title": "How it works",
@@ -364,7 +364,7 @@ window.Translations = {
     "partners.cat.micro": "Micro finance",
     "partners.cat.term": "Term loan",
     "partners.cat.educ": "Education",
-    "footer.about": "VittVaani helps marginalised entrepreneurs discover government schemes in their own language.",
+    "footer.about": "VittVanni helps marginalised entrepreneurs discover government schemes in their own language.",
     "footer.rights": "All rights reserved.",
     "toast.default": "Done"
   },

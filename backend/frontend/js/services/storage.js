@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var PREFIX = "vittvaani:";
+  var PREFIX = "vittvanni:";
 
   window.VStore = {
     get: function (key, fallback) {

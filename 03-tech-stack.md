@@ -1,6 +1,6 @@
 # 03 · Tech Stack
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 ---
 
@@ -105,7 +105,7 @@ pip install -r requirements.txt
 
 | Environment | Engine      | URL shape                                    |
 | ----------- | ----------- | -------------------------------------------- |
-| Dev         | SQLite      | `sqlite:///vittvaani.db` (default)           |
+| Dev         | SQLite      | `sqlite:///vittvanni.db` (default)           |
 | Production  | PostgreSQL  | `DATABASE_URL=postgresql://user:pass@host/db` |
 
 SQLAlchemy models (`app/models/*`) are engine-agnostic; schemas and seed scripts

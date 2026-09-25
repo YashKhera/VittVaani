@@ -1,6 +1,6 @@
 # 10 · Security
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 ---
 
@@ -20,12 +20,12 @@
 | Secret                        | Handling                                            |
 | ----------------------------- | --------------------------------------------------- |
 | `SECRET_KEY` (JWT signing)    | env var via `app/config.py` (`pydantic-settings`)   |
-| `DATABASE_URL`                | env var; dev default is local `vittvaani.db`        |
+| `DATABASE_URL`                | env var; dev default is local `vittvanni.db`        |
 | `.env`                        | gitignored; commit `.env.example` only              |
 
 **Rules:**
 - Never hardcode secrets or log them.
-- Never commit `.env`, `vittvaani.db`, or generated tokens.
+- Never commit `.env`, `vittvanni.db`, or generated tokens.
 - Rotate `SECRET_KEY` between environments.
 
 ## 3. API Security

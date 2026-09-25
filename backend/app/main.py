@@ -50,4 +50,4 @@ def health_check():
 
 @app.get("/")
 def root():
-    return {"message": "VittVaani Backend API", "version": settings.VERSION, "docs": "/docs", "health": "/health"}
+    return {"message": "VittVanni Backend API", "version": settings.VERSION, "docs": "/docs", "health": "/health"}

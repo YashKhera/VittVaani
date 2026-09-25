@@ -1,4 +1,4 @@
-"""Migration v3 - add channel-finance fields to schemes and profile (VittVaani).
+"""Migration v3 - add channel-finance fields to schemes and profile (VittVanni).
 
 Idempotent for SQLite and PostgreSQL. Run from backend/:
     python -m migrations.migrate_v3_channel_finance

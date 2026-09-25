@@ -1,6 +1,6 @@
 # 05 · API Contract
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
 **Base URL (dev):** `http://127.0.0.1:8000/api`
 **Interactive docs:** `http://localhost:8000/docs` (Swagger) · `/redoc` (ReDoc)
 

@@ -77,10 +77,10 @@ class AuthService:
         lang = self._resolve_language(language, user)
         if lang == "hi":
             if purpose == "login":
-                subject = "आपका VittVaani लॉगिन कोड"
-                action = "VittVaani में लॉग इन करें"
+                subject = "आपका VittVanni लॉगिन कोड"
+                action = "VittVanni में लॉग इन करें"
             else:
-                subject = "आपका VittVaani पासवर्ड रीसेट OTP"
+                subject = "आपका VittVanni पासवर्ड रीसेट OTP"
                 action = "अपना पासवर्ड रीसेट करें"
             body = (
                 f"नमस्ते,\n\n"
@@ -88,14 +88,14 @@ class AuthService:
                 f"    {otp}\n\n"
                 f"यह कोड {OTP_EXPIRE_MINUTES} मिनट में समाप्त हो जाएगा।\n"
                 f"यदि आपने यह अनुरोध नहीं किया था, तो इस ईमेल को अनदेखा करें।\n\n"
-                f"- VittVaani टीम"
+                f"- VittVanni टीम"
             )
         else:
             if purpose == "login":
-                subject = "Your VittVaani login code"
-                action = "log in to VittVaani"
+                subject = "Your VittVanni login code"
+                action = "log in to VittVanni"
             else:
-                subject = "Your VittVaani password reset OTP"
+                subject = "Your VittVanni password reset OTP"
                 action = "reset your password"
             body = (
                 f"Hello,\n\n"
@@ -103,7 +103,7 @@ class AuthService:
                 f"    {otp}\n\n"
                 f"This code expires in {OTP_EXPIRE_MINUTES} minutes.\n"
                 f"If you didn't request this, you can safely ignore this email.\n\n"
-                f"- VittVaani Team"
+                f"- VittVanni Team"
             )
         delivered = send_email(user.email, subject, body)
         print(f"[OTP:{purpose}:{lang}] For {user.email}: code {otp} -> email delivery {'OK' if delivered else 'SKIPPED (SMTP not configured)'}")

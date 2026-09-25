@@ -1,4 +1,4 @@
-"""Vercel serverless entrypoint for VittVaani."""
+"""Vercel serverless entrypoint for VittVanni."""
 import os
 import sys
 import traceback

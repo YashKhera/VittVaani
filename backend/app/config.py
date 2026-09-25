@@ -11,10 +11,10 @@ load_dotenv(BASE_DIR / ".env")
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
-    APP_NAME: str = "VittVaani API"
+    APP_NAME: str = "VittVanni API"
     VERSION: str = "2.0.0"
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "sqlite:///./vittvaani.db"
+    DATABASE_URL: str = "sqlite:///./vittvanni.db"
     SECRET_KEY: str = "dev-secret-change-me"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

@@ -1,6 +1,6 @@
 # 04 · Architecture
 
-**Project:** VittVaani — AI Scheme Analyzer for Marginalized Entrepreneurs
+**Project:** VittVanni — AI Scheme Analyzer for Marginalized Entrepreneurs
 
 ---
 
@@ -17,7 +17,7 @@
                                                     ▼
                                      ┌────────────────────────────┐
                                      │  SQLite (dev) / PostgreSQL  │
-                                     │  vittvaani.db              │
+                                     │  vittvanni.db              │
                                      └────────────────────────────┘
 ```
 

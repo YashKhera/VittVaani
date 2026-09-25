@@ -1,6 +1,6 @@
 <div align="center">
 
-# VittVaani
+# VittVanni
 
 ### AI-Powered Government Scheme Analyzer for Marginalized Entrepreneurs & Students
 
@@ -14,7 +14,7 @@
 
 ---
 
-VittVaani helps **women, SC/ST/OBC, persons with disabilities, and rural micro-entrepreneurs** discover the **government schemes they are actually eligible for** — not just a generic list. Tell us about your background once, and get ranked, eligibility-scored recommendations with clear reasons, in your own language.
+VittVanni helps **women, SC/ST/OBC, persons with disabilities, and rural micro-entrepreneurs** discover the **government schemes they are actually eligible for** — not just a generic list. Tell us about your background once, and get ranked, eligibility-scored recommendations with clear reasons, in your own language.
 
 Supports both **business/entrepreneurship** schemes (MUDRA, PMEGP, Stand-Up India, etc.) and **education loan** schemes (Vidya Lakshmi, CSIS, Dr. Ambedkar CSS, scholarships for SC/ST/minority/PwD students, state-specific schemes).
 
@@ -56,7 +56,7 @@ Supports both **business/entrepreneurship** schemes (MUDRA, PMEGP, Stand-Up Indi
 ## Project Structure
 
 ```
-VittVaani/
+VittVanni/
 ├── backend/
 │   ├── app/
 │   │   ├── routers/          # auth, profile, questionnaire, schemes,
@@ -238,7 +238,7 @@ For production hardening see [`10-security.md`](./10-security.md).
 
 ## Team
 
-**VittVaani** — Smart India Hackathon 2026
+**VittVanni** — Smart India Hackathon 2026
 
 <div align="center">
 
