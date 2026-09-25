@@ -69,6 +69,10 @@
         <form id="otpForm" class="hidden" novalidate>
           <p class="text-muted text-sm mb-3" data-i18n="auth.otp.login.hint">No password needed — we'll email you a 6-digit code.</p>
           <div class="form-group">
+            <label for="otpEmail" data-i18n="auth.email">Email address</label>
+            <input type="email" id="otpEmail" name="otpEmail" inputmode="email" autocomplete="email" placeholder="you@example.com">
+          </div>
+          <div class="form-group">
             <label for="otpCode" data-i18n="auth.otp.label">Enter the 6-digit code</label>
             <input type="text" id="otpCode" name="otpCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••">
           </div>

@@ -20,12 +20,21 @@
     el("formError").classList.add("hidden");
   }
 
+  function otpEmail() {
+    var v = el("otpEmail") ? el("otpEmail").value.trim() : "";
+    return v || el("email").value.trim();
+  }
+
   function setMode(mode) {
     var pw = mode === "password";
     el("loginForm").classList.toggle("hidden", !pw);
     el("otpForm").classList.toggle("hidden", pw);
     el("tabPassword").className = "btn btn-sm flex-1 " + (pw ? "btn-secondary" : "btn-ghost");
     el("tabOtp").className = "btn btn-sm flex-1 " + (pw ? "btn-ghost" : "btn-secondary");
+    try {
+      if (!pw && el("otpEmail") && !el("otpEmail").value) el("otpEmail").value = el("email").value;
+      if (pw && el("email") && !el("email").value && el("otpEmail")) el("email").value = el("otpEmail").value;
+    } catch (e) {}
     hideError();
   }
 
@@ -80,7 +89,7 @@
   }
 
   function sendCode() {
-    var email = el("email").value.trim();
+    var email = otpEmail();
     hideError();
     if (!Validation.email(email)) {
       showError(I18n.t("auth.email.invalid"));
@@ -104,7 +113,7 @@
 
   function verifyCode(e) {
     e.preventDefault();
-    var email = el("email").value.trim();
+    var email = otpEmail();
     var code = el("otpCode").value.trim();
     hideError();
     if (!Validation.email(email)) {
